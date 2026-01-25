@@ -16,7 +16,7 @@ import { useNavigation } from '../../App';
 import {
   WorkoutTemplate,
   WorkoutInstance,
-  Set,
+  Set as WorkoutSet,
   createWorkoutInstance,
   PreviousWorkoutData,
 } from '../../../shared/models';
@@ -184,7 +184,7 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
       const exercise = newExercises[exerciseIndex];
       const lastSet = exercise.sets[exercise.sets.length - 1];
 
-      const newSet: Set = {
+      const newSet: WorkoutSet = {
         id: `set_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         setNumber: exercise.sets.length + 1,
         targetReps: lastSet?.targetReps,
