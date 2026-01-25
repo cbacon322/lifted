@@ -1,10 +1,10 @@
 import React, { useState, createContext, useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider, Appbar } from 'react-native-paper';
-import { lightTheme } from './src/theme/theme';
+import { darkTheme } from './src/theme/theme';
 
 // Simple navigation context (no react-native-screens)
 type Screen =
@@ -35,12 +35,19 @@ import TemplateDetailScreen from './src/screens/TemplateDetailScreen';
 import ActiveWorkoutScreen from './src/screens/ActiveWorkoutScreen';
 import WorkoutComparisonScreen from './src/screens/WorkoutComparisonScreen';
 
+// Typewriter font
+const typewriterFont = Platform.select({
+  ios: 'Courier',
+  android: 'monospace',
+  default: 'monospace',
+});
+
 function getTitle(screen: Screen): string {
   switch (screen.name) {
-    case 'TemplateList': return 'Workouts';
-    case 'TemplateDetail': return 'Workout Details';
-    case 'ActiveWorkout': return 'Active Workout';
-    case 'WorkoutComparison': return 'Workout Complete';
+    case 'TemplateList': return 'WORKOUTS';
+    case 'TemplateDetail': return 'DETAILS';
+    case 'ActiveWorkout': return 'LIFTING';
+    case 'WorkoutComparison': return 'COMPLETE';
   }
 }
 
@@ -62,7 +69,7 @@ function AppContent() {
   };
 
   const setTitle = (title: string) => {
-    setCustomTitle(title);
+    setCustomTitle(title.toUpperCase());
   };
 
   const canGoBack = history.length > 1 &&
@@ -90,9 +97,12 @@ function AppContent() {
   return (
     <NavigationContext.Provider value={{ screen, navigate, goBack, canGoBack, setTitle }}>
       <View style={styles.container}>
-        <Appbar.Header mode="small" elevated>
-          {canGoBack && <Appbar.BackAction onPress={goBack} />}
-          <Appbar.Content title={customTitle || getTitle(screen)} />
+        <Appbar.Header mode="small" style={styles.header}>
+          {canGoBack && <Appbar.BackAction onPress={goBack} iconColor="#E53935" />}
+          <Appbar.Content
+            title={customTitle || getTitle(screen)}
+            titleStyle={styles.headerTitle}
+          />
         </Appbar.Header>
         <View style={styles.content}>
           {renderScreen()}
@@ -106,8 +116,8 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
-        <PaperProvider theme={lightTheme}>
-          <StatusBar style="auto" />
+        <PaperProvider theme={darkTheme}>
+          <StatusBar style="light" />
           <AppContent />
         </PaperProvider>
       </SafeAreaProvider>
@@ -118,12 +128,25 @@ export default function App() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+    backgroundColor: '#000000',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#000000',
+  },
+  header: {
+    backgroundColor: '#000000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  headerTitle: {
+    color: '#E53935',
+    fontFamily: typewriterFont,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
   content: {
     flex: 1,
+    backgroundColor: '#000000',
   },
 });

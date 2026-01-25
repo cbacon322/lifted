@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput as RNTextInput, Platform } from 'react-native';
 import {
   Text,
   Button,
   IconButton,
-  useTheme,
   Portal,
   Modal,
   Menu,
 } from 'react-native-paper';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useNavigation } from '../../App';
 
 // Import from shared
@@ -27,12 +27,18 @@ import {
 } from '../../../shared/services/firebase';
 import { formatPreviousSet } from '../../../shared/utils';
 
+// Typewriter font
+const typewriterFont = Platform.select({
+  ios: 'Courier',
+  android: 'monospace',
+  default: 'monospace',
+});
+
 interface Props {
   templateId: string;
 }
 
 export default function ActiveWorkoutScreen({ templateId }: Props) {
-  const theme = useTheme();
   const { navigate, goBack, setTitle } = useNavigation();
 
   const [workout, setWorkout] = useState<WorkoutInstance | null>(null);
@@ -197,6 +203,44 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
     });
   };
 
+  const deleteSet = (exerciseIndex: number, setIndex: number) => {
+    if (!workout) return;
+    const exercise = workout.exercises[exerciseIndex];
+
+    // Don't allow deleting if only one set remains
+    if (exercise.sets.length <= 1) {
+      Alert.alert('Cannot Delete', 'Exercise must have at least one set.');
+      return;
+    }
+
+    setWorkout(prev => {
+      if (!prev) return prev;
+      const newExercises = [...prev.exercises];
+      const newSets = newExercises[exerciseIndex].sets.filter((_, i) => i !== setIndex);
+      // Renumber sets
+      const renumberedSets = newSets.map((s, i) => ({ ...s, setNumber: i + 1 }));
+      newExercises[exerciseIndex] = { ...newExercises[exerciseIndex], sets: renumberedSets };
+      return { ...prev, exercises: newExercises };
+    });
+  };
+
+  const completeAllSets = (exerciseIndex: number) => {
+    if (!workout) return;
+    const exercise = workout.exercises[exerciseIndex];
+    const allCompleted = exercise.sets.every(s => s.completed);
+
+    setWorkout(prev => {
+      if (!prev) return prev;
+      const newExercises = [...prev.exercises];
+      const newSets = newExercises[exerciseIndex].sets.map(s => ({
+        ...s,
+        completed: !allCompleted,
+      }));
+      newExercises[exerciseIndex] = { ...newExercises[exerciseIndex], sets: newSets };
+      return { ...prev, exercises: newExercises };
+    });
+  };
+
   const toggleDetailsVisible = (exerciseIndex: number) => {
     setDetailsVisible(prev => {
       const updated = new Set(prev);
@@ -228,7 +272,6 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               const newExercises = prev.exercises.filter((_, i) => i !== exerciseIndex);
               return { ...prev, exercises: newExercises };
             });
-            // Also remove from details visible
             setDetailsVisible(prev => {
               const updated = new Set(prev);
               updated.delete(exerciseIndex);
@@ -319,13 +362,13 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   if (loading || !workout) {
     return (
       <View style={styles.centered}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>LOADING...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
       {/* Workout Info Header */}
       <View style={styles.workoutHeader}>
         <View style={styles.headerLeft}>
@@ -341,16 +384,18 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
           <View key={exercise.id} style={styles.exerciseSection}>
             {/* Exercise Header */}
             <View style={styles.exerciseHeader}>
-              <Text style={[styles.exerciseName, { color: theme.colors.primary }]}>
-                {exercise.name}
+              <Text style={styles.exerciseName}>
+                {exercise.name.toUpperCase()}
               </Text>
               <Menu
                 visible={menuVisible === exerciseIndex}
                 onDismiss={() => setMenuVisible(null)}
+                contentStyle={styles.menuContent}
                 anchor={
                   <IconButton
                     icon="dots-horizontal"
                     size={20}
+                    iconColor="#E53935"
                     onPress={() => setMenuVisible(exerciseIndex)}
                     style={styles.menuButton}
                   />
@@ -359,11 +404,22 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
                 <Menu.Item
                   onPress={() => toggleDetailsVisible(exerciseIndex)}
                   title={detailsVisible.has(exerciseIndex) ? "Hide Details" : "Show Details"}
+                  titleStyle={styles.menuItemText}
                   leadingIcon={detailsVisible.has(exerciseIndex) ? "eye-off" : "eye"}
+                />
+                <Menu.Item
+                  onPress={() => {
+                    setMenuVisible(null);
+                    Alert.alert('Superset', 'Superset functionality coming soon!');
+                  }}
+                  title="Superset"
+                  titleStyle={styles.menuItemText}
+                  leadingIcon="link-variant"
                 />
                 <Menu.Item
                   onPress={() => deleteExercise(exerciseIndex)}
                   title="Delete Exercise"
+                  titleStyle={styles.menuItemText}
                   leadingIcon="delete"
                 />
               </Menu>
@@ -376,11 +432,21 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
 
             {/* Sets Table Header */}
             <View style={styles.setsHeader}>
-              <Text style={[styles.headerCell, styles.setCol]}>Set</Text>
-              <Text style={[styles.headerCell, styles.prevCol]}>Previous</Text>
-              <Text style={[styles.headerCell, styles.inputCol]}>lbs</Text>
-              <Text style={[styles.headerCell, styles.inputCol]}>Reps</Text>
-              <Text style={[styles.headerCell, styles.checkCol]}></Text>
+              <Text style={[styles.headerCell, styles.setCol]}>SET</Text>
+              <Text style={[styles.headerCell, styles.prevCol]}>PREVIOUS</Text>
+              <Text style={[styles.headerCell, styles.inputCol]}>LBS</Text>
+              <Text style={[styles.headerCell, styles.inputCol]}>REPS</Text>
+              <TouchableOpacity
+                style={styles.checkCol}
+                onPress={() => completeAllSets(exerciseIndex)}
+              >
+                <IconButton
+                  icon={exercise.sets.every(s => s.completed) ? 'check-circle' : 'check-circle-outline'}
+                  iconColor={exercise.sets.every(s => s.completed) ? '#4CAF50' : '#888888'}
+                  size={18}
+                  style={styles.headerCheckButton}
+                />
+              </TouchableOpacity>
             </View>
 
             {/* Sets */}
@@ -390,47 +456,66 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               const restKey = `${exerciseIndex}-${setIndex}`;
               const restRemaining = inlineRestTimers.get(restKey) || 0;
 
+              const renderRightActions = () => (
+                <TouchableOpacity
+                  style={styles.deleteSwipeAction}
+                  onPress={() => deleteSet(exerciseIndex, setIndex)}
+                >
+                  <IconButton
+                    icon="delete"
+                    iconColor="#FFFFFF"
+                    size={20}
+                    style={{ margin: 0 }}
+                  />
+                </TouchableOpacity>
+              );
+
               return (
                 <View key={set.id}>
-                  <View style={[
-                    styles.setRow,
-                    set.completed && styles.setRowCompleted
-                  ]}>
-                    <Text style={[styles.cell, styles.setColData, set.completed && styles.completedText]}>
-                      {setIndex + 1}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.prevCol}
-                      onPress={() => fillFromPrevious(exerciseIndex, setIndex)}
-                    >
-                      <Text style={[styles.cell, styles.prevText]}>
-                        {prevSet ? formatPreviousSet(prevSet.weight, prevSet.reps, prevSet.time) : '—'}
+                  <Swipeable
+                    renderRightActions={exercise.sets.length > 1 ? renderRightActions : undefined}
+                    overshootRight={false}
+                  >
+                    <View style={[
+                      styles.setRow,
+                      set.completed && styles.setRowCompleted
+                    ]}>
+                      <Text style={[styles.cell, styles.setColData, set.completed && styles.completedText]}>
+                        {setIndex + 1}
                       </Text>
-                    </TouchableOpacity>
-                    <RNTextInput
-                      style={[styles.input, set.completed && styles.inputCompleted]}
-                      keyboardType="numeric"
-                      value={set.actualWeight?.toString() || ''}
-                      onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'weight', v)}
-                      placeholder={set.targetWeight?.toString()}
-                      placeholderTextColor="#999"
-                    />
-                    <RNTextInput
-                      style={[styles.input, set.completed && styles.inputCompleted]}
-                      keyboardType="numeric"
-                      value={set.actualReps?.toString() || ''}
-                      onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'reps', v)}
-                      placeholder={set.targetReps?.toString()}
-                      placeholderTextColor="#999"
-                    />
-                    <IconButton
-                      icon={set.completed ? 'check-circle' : 'circle-outline'}
-                      iconColor={set.completed ? '#4CAF50' : theme.colors.outline}
-                      size={24}
-                      style={styles.checkButton}
-                      onPress={() => toggleSetComplete(exerciseIndex, setIndex)}
-                    />
-                  </View>
+                      <TouchableOpacity
+                        style={styles.prevCol}
+                        onPress={() => fillFromPrevious(exerciseIndex, setIndex)}
+                      >
+                        <Text style={[styles.cell, styles.prevText]}>
+                          {prevSet ? formatPreviousSet(prevSet.weight, prevSet.reps, prevSet.time) : '—'}
+                        </Text>
+                      </TouchableOpacity>
+                      <RNTextInput
+                        style={[styles.input, set.completed && styles.inputCompleted]}
+                        keyboardType="numeric"
+                        value={set.actualWeight?.toString() || ''}
+                        onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'weight', v)}
+                        placeholder={set.targetWeight?.toString()}
+                        placeholderTextColor="#666666"
+                      />
+                      <RNTextInput
+                        style={[styles.input, set.completed && styles.inputCompleted]}
+                        keyboardType="numeric"
+                        value={set.actualReps?.toString() || ''}
+                        onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'reps', v)}
+                        placeholder={set.targetReps?.toString()}
+                        placeholderTextColor="#666666"
+                      />
+                      <IconButton
+                        icon={set.completed ? 'check-circle' : 'circle-outline'}
+                        iconColor={set.completed ? '#4CAF50' : '#B71C1C'}
+                        size={24}
+                        style={styles.checkButton}
+                        onPress={() => toggleSetComplete(exerciseIndex, setIndex)}
+                      />
+                    </View>
+                  </Swipeable>
 
                   {/* Inline Rest Timer */}
                   {set.completed && restRemaining > 0 && (
@@ -459,8 +544,10 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               compact
               onPress={() => addSet(exerciseIndex)}
               style={styles.addSetButton}
+              textColor="#E53935"
+              labelStyle={styles.addSetLabel}
             >
-              + Add Set {exercise.restTimer ? `(${formatTime(exercise.restTimer)})` : ''}
+              + ADD SET {exercise.restTimer ? `(${formatTime(exercise.restTimer)})` : ''}
             </Button>
           </View>
         ))}
@@ -468,24 +555,53 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
-        <Button mode="outlined" onPress={handleCancelWorkout} style={styles.halfButton}>
-          Cancel
+        <Button
+          mode="outlined"
+          onPress={handleCancelWorkout}
+          style={styles.halfButton}
+          textColor="#E53935"
+          labelStyle={styles.buttonLabel}
+        >
+          CANCEL
         </Button>
-        <Button mode="contained" onPress={handleFinishWorkout} style={styles.halfButton}>
-          Finish
+        <Button
+          mode="contained"
+          onPress={handleFinishWorkout}
+          style={styles.halfButton}
+          buttonColor="#E53935"
+          textColor="#000000"
+          labelStyle={styles.buttonLabel}
+        >
+          FINISH
         </Button>
       </View>
 
-      {/* Rest Timer Modal (backup) */}
+      {/* Rest Timer Modal */}
       <Portal>
-        <Modal visible={restTimerVisible} onDismiss={() => setRestTimerVisible(false)} contentContainerStyle={styles.restTimerModal}>
-          <Text variant="headlineLarge" style={styles.modalTimerText}>
+        <Modal
+          visible={restTimerVisible}
+          onDismiss={() => setRestTimerVisible(false)}
+          contentContainerStyle={styles.restTimerModal}
+        >
+          <Text style={styles.modalTimerText}>
             {formatTime(restTimeRemaining)}
           </Text>
-          <Text variant="bodyLarge">Rest Time</Text>
+          <Text style={styles.modalRestLabel}>REST TIME</Text>
           <View style={styles.restTimerButtons}>
-            <Button onPress={() => setRestTimeRemaining(prev => prev + 30)}>+30s</Button>
-            <Button onPress={() => setRestTimerVisible(false)}>Skip</Button>
+            <Button
+              onPress={() => setRestTimeRemaining(prev => prev + 30)}
+              textColor="#E53935"
+              labelStyle={styles.modalButtonLabel}
+            >
+              +30s
+            </Button>
+            <Button
+              onPress={() => setRestTimerVisible(false)}
+              textColor="#E53935"
+              labelStyle={styles.modalButtonLabel}
+            >
+              SKIP
+            </Button>
           </View>
         </Modal>
       </Portal>
@@ -494,8 +610,22 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+  },
+  loadingText: {
+    fontFamily: typewriterFont,
+    fontSize: 16,
+    color: '#E53935',
+    letterSpacing: 2,
+  },
 
   // Workout header
   workoutHeader: {
@@ -503,61 +633,132 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#2A2A2A',
+    backgroundColor: '#000000',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
-  headerDate: { fontSize: 14, opacity: 0.7 },
-  headerTimer: { fontSize: 16, fontWeight: '600' },
+  headerDate: {
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    color: '#888888',
+  },
+  headerTimer: {
+    fontFamily: typewriterFont,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#E53935',
+    letterSpacing: 1,
+  },
 
-  scrollContent: { padding: 12, paddingBottom: 80 },
+  scrollContent: { padding: 12, paddingBottom: 100 },
 
   // Exercise section
   exerciseSection: {
-    backgroundColor: 'white',
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
     marginBottom: 12,
     padding: 12,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   exerciseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  exerciseName: { fontSize: 16, fontWeight: '600' },
+  exerciseName: {
+    fontFamily: typewriterFont,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#E53935',
+    letterSpacing: 1,
+  },
   menuButton: { margin: 0 },
+  menuContent: {
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  menuItemText: {
+    fontFamily: typewriterFont,
+    color: '#EF5350',
+  },
   exerciseNotes: {
-    fontSize: 13,
-    color: '#FF9800',
-    marginTop: 2,
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    color: '#FF6659',
+    marginTop: 4,
     marginBottom: 4,
+    fontStyle: 'italic',
   },
 
   // Sets table
-  setsHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  headerCell: { fontSize: 11, fontWeight: '600', opacity: 0.5, textTransform: 'uppercase' },
+  setsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+    marginBottom: 4,
+  },
+  headerCell: {
+    fontFamily: typewriterFont,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#888888',
+    letterSpacing: 1,
+  },
   setCol: { width: 28 },
-  setColData: { width: 28, textAlign: 'right', paddingRight: 8 },
+  setColData: {
+    width: 28,
+    textAlign: 'right',
+    paddingRight: 8,
+    fontFamily: typewriterFont,
+  },
   prevCol: { flex: 1, paddingRight: 4 },
-  inputCol: { width: 52, marginHorizontal: 2 },
-  checkCol: { width: 36 },
+  inputCol: { width: 52, marginHorizontal: 2, textAlign: 'center' },
+  checkCol: { width: 36, alignItems: 'center', justifyContent: 'center' },
+  headerCheckButton: { margin: 0, padding: 0 },
 
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginVertical: 1,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginVertical: 2,
   },
   setRowCompleted: {
-    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
   },
-  cell: { fontSize: 14 },
-  completedText: { fontWeight: '600' },
-  prevText: { opacity: 0.5, fontSize: 13 },
+  deleteSwipeAction: {
+    backgroundColor: '#E53935',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
+    borderRadius: 4,
+    marginVertical: 2,
+  },
+  cell: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#EF5350',
+  },
+  completedText: {
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  prevText: {
+    fontFamily: typewriterFont,
+    color: '#888888',
+    fontSize: 12,
+  },
   input: {
+    fontFamily: typewriterFont,
     width: 52,
     height: 28,
     fontSize: 13,
@@ -565,12 +766,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginHorizontal: 2,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#2A2A2A',
     borderRadius: 4,
     textAlign: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#0A0A0A',
+    color: '#EF5350',
   },
-  inputCompleted: { backgroundColor: 'rgba(76, 175, 80, 0.1)' },
+  inputCompleted: {
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+    color: '#4CAF50',
+  },
   checkButton: { margin: 0 },
 
   // Inline rest timer
@@ -578,18 +784,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   restTimerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#2196F3',
+    backgroundColor: '#E53935',
   },
   restTimerText: {
+    fontFamily: typewriterFont,
     paddingHorizontal: 12,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2196F3',
+    fontWeight: '700',
+    color: '#E53935',
+    letterSpacing: 1,
   },
 
   // Static rest indicator
@@ -602,15 +810,21 @@ const styles = StyleSheet.create({
   restIndicatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#BDBDBD',
+    backgroundColor: '#2A2A2A',
   },
   restIndicatorText: {
+    fontFamily: typewriterFont,
     paddingHorizontal: 8,
-    fontSize: 12,
-    color: '#9E9E9E',
+    fontSize: 11,
+    color: '#888888',
   },
 
-  addSetButton: { marginTop: 4, alignSelf: 'flex-start' },
+  addSetButton: { marginTop: 8, alignSelf: 'flex-start' },
+  addSetLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    letterSpacing: 1,
+  },
 
   // Bottom bar
   bottomBar: {
@@ -621,19 +835,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     paddingBottom: 24,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: '#000000',
     gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#2A2A2A',
   },
-  halfButton: { flex: 1, borderRadius: 8 },
+  halfButton: {
+    flex: 1,
+    borderRadius: 8,
+    borderColor: '#E53935',
+  },
+  buttonLabel: {
+    fontFamily: typewriterFont,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
 
   // Modal
   restTimerModal: {
-    backgroundColor: 'white',
+    backgroundColor: '#1A1A1A',
     margin: 20,
     padding: 40,
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E53935',
   },
-  modalTimerText: { fontWeight: '700', marginBottom: 8 },
-  restTimerButtons: { flexDirection: 'row', gap: 16, marginTop: 24 },
+  modalTimerText: {
+    fontFamily: typewriterFont,
+    fontSize: 48,
+    fontWeight: '700',
+    color: '#E53935',
+    marginBottom: 8,
+    letterSpacing: 4,
+  },
+  modalRestLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
+    letterSpacing: 2,
+  },
+  restTimerButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 24,
+  },
+  modalButtonLabel: {
+    fontFamily: typewriterFont,
+    letterSpacing: 1,
+  },
 });

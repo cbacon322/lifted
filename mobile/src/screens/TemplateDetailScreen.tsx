@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import {
   Text,
   Button,
   ActivityIndicator,
-  useTheme,
   Portal,
   Modal,
   Divider,
@@ -16,12 +15,18 @@ import { useNavigation } from '../../App';
 import { WorkoutTemplate, Exercise, Set } from '../../../shared/models';
 import { getTemplate, updateTemplate, getDevUserId } from '../../../shared/services/firebase';
 
+// Typewriter font
+const typewriterFont = Platform.select({
+  ios: 'Courier',
+  android: 'monospace',
+  default: 'monospace',
+});
+
 interface Props {
   templateId: string;
 }
 
 export default function TemplateDetailScreen({ templateId }: Props) {
-  const theme = useTheme();
   const { navigate, goBack } = useNavigation();
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +56,6 @@ export default function TemplateDetailScreen({ templateId }: Props) {
 
   const startEditing = () => {
     if (template) {
-      // Deep clone the template for editing
       setEditedTemplate(JSON.parse(JSON.stringify(template)));
       setIsEditing(true);
     }
@@ -125,7 +129,6 @@ export default function TemplateDetailScreen({ templateId }: Props) {
 
   const formatSetSummary = (sets: Set[]): string => {
     if (sets.length === 0) return '—';
-
     const firstSet = sets[0];
 
     if (firstSet.targetTime) {
@@ -148,7 +151,6 @@ export default function TemplateDetailScreen({ templateId }: Props) {
 
   const formatSetDetail = (set: Set, index: number): string => {
     const parts: string[] = [`Set ${index + 1}:`];
-
     if (set.targetReps) parts.push(`${set.targetReps} reps`);
     if (set.targetWeight) parts.push(`@ ${set.targetWeight} lbs`);
     if (set.targetTime) {
@@ -157,14 +159,13 @@ export default function TemplateDetailScreen({ templateId }: Props) {
       parts.push(minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`);
     }
     if (set.targetDistance) parts.push(`${set.targetDistance}m`);
-
     return parts.join(' ');
   };
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#E53935" />
       </View>
     );
   }
@@ -172,8 +173,16 @@ export default function TemplateDetailScreen({ templateId }: Props) {
   if (!template) {
     return (
       <View style={styles.centered}>
-        <Text variant="titleMedium">Template not found</Text>
-        <Button onPress={goBack}>Go Back</Button>
+        <Text style={styles.errorText}>TEMPLATE NOT FOUND</Text>
+        <Button
+          mode="contained"
+          onPress={goBack}
+          buttonColor="#E53935"
+          textColor="#000000"
+          labelStyle={styles.buttonLabel}
+        >
+          GO BACK
+        </Button>
       </View>
     );
   }
@@ -182,33 +191,35 @@ export default function TemplateDetailScreen({ templateId }: Props) {
   if (!displayTemplate) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
           {isEditing ? (
             <TextInput
-              style={[styles.titleInput, { color: theme.colors.onBackground }]}
+              style={styles.titleInput}
               value={editedTemplate?.name || ''}
               onChangeText={(text) => setEditedTemplate(prev => prev ? { ...prev, name: text } : null)}
               placeholder="Workout name"
+              placeholderTextColor="#666666"
             />
           ) : (
-            <Text variant="titleLarge" style={styles.title}>
-              {displayTemplate.name}
+            <Text style={styles.title}>
+              {displayTemplate.name.toUpperCase()}
             </Text>
           )}
           {isEditing ? (
             <TextInput
-              style={[styles.descriptionInput, { color: theme.colors.onBackground }]}
+              style={styles.descriptionInput}
               value={editedTemplate?.description || ''}
               onChangeText={(text) => setEditedTemplate(prev => prev ? { ...prev, description: text } : null)}
               placeholder="Description (optional)"
+              placeholderTextColor="#666666"
               multiline
             />
           ) : (
             displayTemplate.description && (
-              <Text variant="bodyMedium" style={styles.description}>
+              <Text style={styles.description}>
                 {displayTemplate.description}
               </Text>
             )
@@ -222,34 +233,38 @@ export default function TemplateDetailScreen({ templateId }: Props) {
               {isEditing ? (
                 <View style={styles.editExerciseRow}>
                   <TextInput
-                    style={[styles.exerciseNameInput, { color: theme.colors.onBackground }]}
+                    style={styles.exerciseNameInput}
                     value={exercise.name}
                     onChangeText={(text) => updateExerciseName(exerciseIndex, text)}
+                    placeholderTextColor="#666666"
                   />
                   <View style={styles.editSets}>
                     {exercise.sets.map((set, setIndex) => (
                       <View key={set.id} style={styles.editSetRow}>
-                        <Text variant="bodySmall" style={styles.setLabel}>Set {setIndex + 1}</Text>
+                        <Text style={styles.setLabel}>Set {setIndex + 1}</Text>
                         <TextInput
                           style={styles.setInput}
                           value={set.targetReps?.toString() || ''}
                           onChangeText={(text) => updateExerciseSet(exerciseIndex, setIndex, 'targetReps', text)}
                           keyboardType="numeric"
                           placeholder="reps"
+                          placeholderTextColor="#666666"
                         />
-                        <Text variant="bodySmall"> × </Text>
+                        <Text style={styles.setMultiplier}> × </Text>
                         <TextInput
                           style={styles.setInput}
                           value={set.targetWeight?.toString() || ''}
                           onChangeText={(text) => updateExerciseSet(exerciseIndex, setIndex, 'targetWeight', text)}
                           keyboardType="numeric"
                           placeholder="lbs"
+                          placeholderTextColor="#666666"
                         />
-                        <Text variant="bodySmall"> lbs</Text>
+                        <Text style={styles.setUnit}> lbs</Text>
                         {exercise.sets.length > 1 && (
                           <IconButton
                             icon="minus-circle-outline"
                             size={18}
+                            iconColor="#E53935"
                             onPress={() => removeSet(exerciseIndex, setIndex)}
                             style={styles.removeSetButton}
                           />
@@ -261,8 +276,10 @@ export default function TemplateDetailScreen({ templateId }: Props) {
                       compact
                       onPress={() => addSet(exerciseIndex)}
                       style={styles.addSetButton}
+                      textColor="#E53935"
+                      labelStyle={styles.addSetLabel}
                     >
-                      + Add Set
+                      + ADD SET
                     </Button>
                   </View>
                 </View>
@@ -272,42 +289,47 @@ export default function TemplateDetailScreen({ templateId }: Props) {
                   onPress={() => setSelectedExercise(exercise)}
                   activeOpacity={0.6}
                 >
-                  <Text variant="bodyMedium" style={styles.exerciseName} numberOfLines={1}>
+                  <Text style={styles.exerciseName} numberOfLines={1}>
                     {exercise.name}
                   </Text>
-                  <Text variant="bodySmall" style={styles.exerciseSummary}>
+                  <Text style={styles.exerciseSummary}>
                     {formatSetSummary(exercise.sets)}
                   </Text>
                 </TouchableOpacity>
               )}
-              {exerciseIndex < displayTemplate.exercises.length - 1 && <Divider />}
+              {exerciseIndex < displayTemplate.exercises.length - 1 && (
+                <Divider style={styles.divider} />
+              )}
             </View>
           ))}
         </View>
       </ScrollView>
 
       {/* Bottom Bar */}
-      <View style={[styles.bottomBar, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.bottomBar}>
         {isEditing ? (
           <View style={styles.buttonRow}>
             <Button
               mode="outlined"
               onPress={cancelEditing}
               style={styles.halfButton}
-              contentStyle={styles.buttonContent}
+              textColor="#E53935"
+              labelStyle={styles.buttonLabel}
               disabled={saving}
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               mode="contained"
               onPress={saveChanges}
               style={styles.halfButton}
-              contentStyle={styles.buttonContent}
+              buttonColor="#E53935"
+              textColor="#000000"
+              labelStyle={styles.buttonLabel}
               loading={saving}
               disabled={saving}
             >
-              Save
+              SAVE
             </Button>
           </View>
         ) : (
@@ -316,17 +338,20 @@ export default function TemplateDetailScreen({ templateId }: Props) {
               mode="outlined"
               onPress={startEditing}
               style={styles.halfButton}
-              contentStyle={styles.buttonContent}
+              textColor="#E53935"
+              labelStyle={styles.buttonLabel}
             >
-              Edit
+              EDIT
             </Button>
             <Button
               mode="contained"
               style={styles.halfButton}
-              contentStyle={styles.buttonContent}
+              buttonColor="#E53935"
+              textColor="#000000"
+              labelStyle={styles.buttonLabel}
               onPress={() => navigate({ name: 'ActiveWorkout', params: { templateId: template.id } })}
             >
-              Start
+              START
             </Button>
           </View>
         )}
@@ -337,41 +362,43 @@ export default function TemplateDetailScreen({ templateId }: Props) {
         <Modal
           visible={selectedExercise !== null && !isEditing}
           onDismiss={() => setSelectedExercise(null)}
-          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+          contentContainerStyle={styles.modal}
         >
           {selectedExercise && (
             <View>
-              <Text variant="titleLarge" style={styles.modalTitle}>
-                {selectedExercise.name}
+              <Text style={styles.modalTitle}>
+                {selectedExercise.name.toUpperCase()}
               </Text>
 
               {selectedExercise.notes && (
-                <Text variant="bodyMedium" style={styles.modalNotes}>
+                <Text style={styles.modalNotes}>
                   {selectedExercise.notes}
                 </Text>
               )}
 
               <View style={styles.modalSets}>
-                <Text variant="labelMedium" style={styles.modalSectionTitle}>Sets</Text>
                 {selectedExercise.sets.map((set, idx) => (
-                  <Text key={set.id} variant="bodyMedium" style={styles.modalSetRow}>
+                  <Text key={set.id} style={styles.modalSetRow}>
                     {formatSetDetail(set, idx)}
                   </Text>
                 ))}
               </View>
 
               {selectedExercise.restTimer && (
-                <Text variant="bodyMedium" style={styles.modalRest}>
+                <Text style={styles.modalRest}>
                   Rest: {selectedExercise.restTimer}s between sets
                 </Text>
               )}
 
               <Button
-                mode="contained-tonal"
+                mode="contained"
                 onPress={() => setSelectedExercise(null)}
+                buttonColor="#E53935"
+                textColor="#000000"
+                labelStyle={styles.buttonLabel}
                 style={styles.modalButton}
               >
-                Close
+                CLOSE
               </Button>
             </View>
           )}
@@ -384,11 +411,20 @@ export default function TemplateDetailScreen({ templateId }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000',
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000000',
+  },
+  errorText: {
+    fontFamily: typewriterFont,
+    fontSize: 18,
+    color: '#E53935',
+    marginBottom: 16,
+    letterSpacing: 2,
   },
   scrollContent: {
     padding: 16,
@@ -398,56 +434,83 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
+    fontFamily: typewriterFont,
+    fontSize: 24,
     fontWeight: '700',
+    color: '#E53935',
+    letterSpacing: 2,
   },
   titleInput: {
-    flex: 1,
+    fontFamily: typewriterFont,
     fontSize: 22,
     fontWeight: '700',
-    padding: 8,
-    backgroundColor: 'white',
+    color: '#E53935',
+    padding: 12,
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   description: {
-    marginTop: 4,
-    opacity: 0.7,
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    marginTop: 8,
+    color: '#888888',
   },
   descriptionInput: {
-    marginTop: 8,
+    fontFamily: typewriterFont,
+    marginTop: 12,
     fontSize: 14,
-    padding: 8,
-    backgroundColor: 'white',
+    padding: 12,
+    color: '#EF5350',
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
-    minHeight: 40,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    minHeight: 60,
   },
   exerciseList: {
-    backgroundColor: 'white',
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
     paddingHorizontal: 16,
   },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   exerciseName: {
-    fontWeight: '500',
+    fontFamily: typewriterFont,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#EF5350',
     flex: 1,
     marginRight: 12,
   },
   exerciseSummary: {
-    opacity: 0.6,
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    color: '#888888',
+  },
+  divider: {
+    backgroundColor: '#2A2A2A',
   },
   editExerciseRow: {
     paddingVertical: 12,
   },
   exerciseNameInput: {
+    fontFamily: typewriterFont,
     fontSize: 16,
-    fontWeight: '500',
-    padding: 8,
-    backgroundColor: '#F5F5F5',
+    fontWeight: '600',
+    padding: 10,
+    color: '#EF5350',
+    backgroundColor: '#0A0A0A',
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
     marginBottom: 8,
   },
   editSets: {
@@ -459,15 +522,31 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   setLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
     width: 50,
-    opacity: 0.6,
+    color: '#888888',
   },
   setInput: {
+    fontFamily: typewriterFont,
     width: 50,
     padding: 6,
-    backgroundColor: '#F5F5F5',
+    color: '#EF5350',
+    backgroundColor: '#0A0A0A',
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
     textAlign: 'center',
+  },
+  setMultiplier: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
+  },
+  setUnit: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    color: '#888888',
   },
   removeSetButton: {
     margin: 0,
@@ -475,7 +554,12 @@ const styles = StyleSheet.create({
   },
   addSetButton: {
     alignSelf: 'flex-start',
-    marginTop: 4,
+    marginTop: 8,
+  },
+  addSetLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    letterSpacing: 1,
   },
   bottomBar: {
     position: 'absolute',
@@ -484,6 +568,9 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 12,
     paddingBottom: 24,
+    backgroundColor: '#000000',
+    borderTopWidth: 1,
+    borderTopColor: '#2A2A2A',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -492,38 +579,60 @@ const styles = StyleSheet.create({
   halfButton: {
     flex: 1,
     borderRadius: 8,
+    borderColor: '#E53935',
   },
-  buttonContent: {},
+  buttonLabel: {
+    fontFamily: typewriterFont,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
   modal: {
     margin: 20,
-    padding: 20,
+    padding: 24,
     borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#E53935',
   },
   modalTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 12,
+    color: '#E53935',
+    marginBottom: 16,
+    letterSpacing: 2,
   },
   modalNotes: {
-    opacity: 0.7,
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
     fontStyle: 'italic',
     marginBottom: 16,
   },
   modalSectionTitle: {
-    opacity: 0.6,
-    textTransform: 'uppercase',
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    color: '#888888',
+    letterSpacing: 2,
     marginBottom: 8,
   },
   modalSets: {
     marginBottom: 16,
   },
   modalSetRow: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#EF5350',
     paddingVertical: 4,
   },
   modalRest: {
-    opacity: 0.7,
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    color: '#888888',
     marginBottom: 16,
   },
   modalButton: {
     marginTop: 8,
+    borderRadius: 8,
   },
 });

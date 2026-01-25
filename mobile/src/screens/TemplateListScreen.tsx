@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, Platform } from 'react-native';
 import {
   Text,
   Card,
   ActivityIndicator,
-  useTheme,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
 
@@ -12,8 +11,14 @@ import { useNavigation } from '../../App';
 import { WorkoutTemplate } from '../../../shared/models';
 import { subscribeToTemplates, getDevUserId } from '../../../shared/services/firebase';
 
+// Typewriter font
+const typewriterFont = Platform.select({
+  ios: 'Courier',
+  android: 'monospace',
+  default: 'monospace',
+});
+
 export default function TemplateListScreen() {
-  const theme = useTheme();
   const { navigate } = useNavigation();
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,22 +48,22 @@ export default function TemplateListScreen() {
   const renderTemplate = ({ item }: { item: WorkoutTemplate }) => (
     <Card
       style={styles.card}
-      mode="elevated"
+      mode="contained"
       onPress={() => navigate({ name: 'TemplateDetail', params: { templateId: item.id } })}
     >
       <Card.Content>
-        <Text variant="titleMedium" style={styles.cardTitle}>
-          {item.name}
+        <Text style={styles.cardTitle}>
+          {item.name.toUpperCase()}
         </Text>
         {item.description && (
-          <Text variant="bodySmall" style={styles.cardDescription}>
+          <Text style={styles.cardDescription}>
             {item.description}
           </Text>
         )}
-        <Text variant="bodySmall" style={styles.exerciseCount}>
+        <Text style={styles.exerciseCount}>
           {item.exercises.length} exercise{item.exercises.length !== 1 ? 's' : ''}
         </Text>
-        <Text variant="bodySmall" style={styles.createdAt}>
+        <Text style={styles.createdAt}>
           Created {formatDate(item.createdAt)}
         </Text>
       </Card.Content>
@@ -68,7 +73,7 @@ export default function TemplateListScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#E53935" />
       </View>
     );
   }
@@ -76,10 +81,10 @@ export default function TemplateListScreen() {
   if (templates.length === 0) {
     return (
       <View style={styles.centered}>
-        <Text variant="titleLarge" style={styles.emptyTitle}>
-          No Workouts Yet
+        <Text style={styles.emptyTitle}>
+          NO WORKOUTS YET
         </Text>
-        <Text variant="bodyMedium" style={styles.emptySubtitle}>
+        <Text style={styles.emptySubtitle}>
           Import templates from the desktop app to get started.
         </Text>
       </View>
@@ -87,14 +92,19 @@ export default function TemplateListScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
       <FlatList
         data={templates}
         renderItem={renderTemplate}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#E53935"
+            colors={['#E53935']}
+          />
         }
       />
     </View>
@@ -104,40 +114,64 @@ export default function TemplateListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000',
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    backgroundColor: '#000000',
   },
   list: {
     padding: 16,
   },
   card: {
     marginBottom: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderRadius: 8,
   },
   cardTitle: {
-    fontWeight: '600',
+    fontFamily: typewriterFont,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#E53935',
+    letterSpacing: 1,
   },
   cardDescription: {
-    marginTop: 4,
-    opacity: 0.7,
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    marginTop: 6,
+    color: '#EF5350',
+    opacity: 0.8,
   },
   exerciseCount: {
-    marginTop: 8,
-    opacity: 0.6,
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    marginTop: 12,
+    color: '#888888',
   },
   createdAt: {
-    marginTop: 8,
-    opacity: 0.5,
+    fontFamily: typewriterFont,
+    fontSize: 11,
+    marginTop: 4,
+    color: '#888888',
     fontStyle: 'italic',
   },
   emptyTitle: {
-    marginBottom: 8,
+    fontFamily: typewriterFont,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#E53935',
+    marginBottom: 12,
+    letterSpacing: 2,
   },
   emptySubtitle: {
-    opacity: 0.7,
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
     textAlign: 'center',
   },
 });

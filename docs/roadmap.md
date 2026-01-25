@@ -13,3 +13,6 @@ A running list of things I want to complete. These should not be attempted until
 - in edit workout and in the active workout, i should be able to hold an exercise and then drag it to a different spot in the workout in order to change the order of the lifts
 
 - i also want a group that is like "postponed" or something for exercises that i want to eventually incorporate into the lift but not today. So that could be like a dropdown at the bottom of every workout details/active workout that can be moved 
+
+- is there a database for exercises? i shouldnt be able to add an exercise that already exists and i should be able to add exercises to a template from the edit tempalte button and also in the active workout screen that i can then afterwards choose whether to apply to the template
+

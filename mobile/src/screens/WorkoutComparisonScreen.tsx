@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import {
   Text,
   Card,
   Button,
-  useTheme,
   Divider,
   List,
   RadioButton,
+  ActivityIndicator,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
 
@@ -30,13 +30,19 @@ import {
   getUpdateOptionSummary,
 } from '../../../shared/services/templateUpdater';
 
+// Typewriter font
+const typewriterFont = Platform.select({
+  ios: 'Courier',
+  android: 'monospace',
+  default: 'monospace',
+});
+
 interface Props {
   workoutId: string;
   templateId: string;
 }
 
 export default function WorkoutComparisonScreen({ workoutId, templateId }: Props) {
-  const theme = useTheme();
   const { navigate, goBack } = useNavigation();
 
   const [workout, setWorkout] = useState<WorkoutInstance | null>(null);
@@ -113,7 +119,8 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
   if (loading || !workout || !template || !changes) {
     return (
       <View style={styles.centered}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color="#E53935" />
+        <Text style={styles.loadingText}>LOADING...</Text>
       </View>
     );
   }
@@ -125,56 +132,56 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
     changes.addedExercises.length;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Card style={styles.headerCard}>
+        <Card style={styles.headerCard} mode="contained">
           <Card.Content>
-            <Text variant="headlineSmall" style={styles.title}>
-              Workout Complete!
+            <Text style={styles.title}>
+              WORKOUT COMPLETE!
             </Text>
-            <Text variant="bodyMedium" style={styles.subtitle}>
-              Compare with template: "{template.name}"
+            <Text style={styles.subtitle}>
+              Compare with template: "{template.name.toUpperCase()}"
             </Text>
           </Card.Content>
         </Card>
 
-        <Card style={styles.summaryCard}>
+        <Card style={styles.summaryCard} mode="contained">
           <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Changes Detected
+            <Text style={styles.sectionTitle}>
+              CHANGES DETECTED
             </Text>
             {changes.modifiedExercises.length > 0 && (
-              <Text variant="bodyMedium">
+              <Text style={styles.changeItem}>
                 • {changes.modifiedExercises.length} exercise{changes.modifiedExercises.length !== 1 ? 's' : ''} modified
               </Text>
             )}
             {changes.skippedExercises.length > 0 && (
-              <Text variant="bodyMedium">
+              <Text style={styles.changeItem}>
                 • {changes.skippedExercises.length} exercise{changes.skippedExercises.length !== 1 ? 's' : ''} skipped
               </Text>
             )}
             {changes.deletedExercises.length > 0 && (
-              <Text variant="bodyMedium">
+              <Text style={styles.changeItem}>
                 • {changes.deletedExercises.length} exercise{changes.deletedExercises.length !== 1 ? 's' : ''} deleted
               </Text>
             )}
             {changes.addedExercises.length > 0 && (
-              <Text variant="bodyMedium">
+              <Text style={styles.changeItem}>
                 • {changes.addedExercises.length} exercise{changes.addedExercises.length !== 1 ? 's' : ''} added
               </Text>
             )}
             {totalChanges === 0 && (
-              <Text variant="bodyMedium" style={styles.noChanges}>
+              <Text style={styles.noChanges}>
                 No changes from template
               </Text>
             )}
           </Card.Content>
         </Card>
 
-        <Card style={styles.optionsCard}>
+        <Card style={styles.optionsCard} mode="contained">
           <Card.Content>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              How would you like to update your template?
+            <Text style={styles.sectionTitle}>
+              HOW WOULD YOU LIKE TO UPDATE YOUR TEMPLATE?
             </Text>
 
             <RadioButton.Group
@@ -183,32 +190,40 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
             >
               <List.Item
                 title="Update Values Only"
+                titleStyle={styles.optionTitle}
                 description="Updates weights/reps, keeps template structure"
-                left={() => <RadioButton value="values_only" />}
+                descriptionStyle={styles.optionDescription}
+                left={() => <RadioButton value="values_only" color="#E53935" uncheckedColor="#5C1C1C" />}
                 onPress={() => setSelectedOption('values_only')}
                 style={styles.optionItem}
               />
-              <Divider />
+              <Divider style={styles.divider} />
               <List.Item
                 title="Update Template & Values"
+                titleStyle={styles.optionTitle}
                 description="Updates values + adds/removes sets and exercises"
-                left={() => <RadioButton value="template_and_values" />}
+                descriptionStyle={styles.optionDescription}
+                left={() => <RadioButton value="template_and_values" color="#E53935" uncheckedColor="#5C1C1C" />}
                 onPress={() => setSelectedOption('template_and_values')}
                 style={styles.optionItem}
               />
-              <Divider />
+              <Divider style={styles.divider} />
               <List.Item
                 title="Save as New Template"
+                titleStyle={styles.optionTitle}
                 description={`Creates "${template.name} (copy)" from today's workout`}
-                left={() => <RadioButton value="save_as_new" />}
+                descriptionStyle={styles.optionDescription}
+                left={() => <RadioButton value="save_as_new" color="#E53935" uncheckedColor="#5C1C1C" />}
                 onPress={() => setSelectedOption('save_as_new')}
                 style={styles.optionItem}
               />
-              <Divider />
+              <Divider style={styles.divider} />
               <List.Item
                 title="Keep Original Template"
+                titleStyle={styles.optionTitle}
                 description="No changes to template, workout saved to history"
-                left={() => <RadioButton value="keep_original" />}
+                descriptionStyle={styles.optionDescription}
+                left={() => <RadioButton value="keep_original" color="#E53935" uncheckedColor="#5C1C1C" />}
                 onPress={() => setSelectedOption('keep_original')}
                 style={styles.optionItem}
               />
@@ -216,13 +231,13 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
           </Card.Content>
         </Card>
 
-        <Card style={styles.previewCard}>
+        <Card style={styles.previewCard} mode="contained">
           <Card.Content>
-            <Text variant="titleSmall" style={styles.previewTitle}>
-              This will:
+            <Text style={styles.previewTitle}>
+              THIS WILL:
             </Text>
             {getUpdateOptionSummary(selectedOption, changes).map((line, i) => (
-              <Text key={i} variant="bodySmall" style={styles.previewLine}>
+              <Text key={i} style={styles.previewLine}>
                 • {line}
               </Text>
             ))}
@@ -238,8 +253,11 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
           disabled={saving}
           style={styles.confirmButton}
           contentStyle={styles.confirmButtonContent}
+          labelStyle={styles.confirmButtonLabel}
+          buttonColor="#E53935"
+          textColor="#000000"
         >
-          Confirm
+          CONFIRM
         </Button>
       </View>
     </View>
@@ -247,21 +265,142 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { padding: 16, paddingBottom: 100 },
-  headerCard: { marginBottom: 12 },
-  title: { fontWeight: '700', textAlign: 'center' },
-  subtitle: { textAlign: 'center', opacity: 0.7, marginTop: 4 },
-  summaryCard: { marginBottom: 12 },
-  sectionTitle: { fontWeight: '600', marginBottom: 8 },
-  noChanges: { opacity: 0.6, fontStyle: 'italic' },
-  optionsCard: { marginBottom: 12 },
-  optionItem: { paddingVertical: 4 },
-  previewCard: { backgroundColor: '#F5F5F5' },
-  previewTitle: { fontWeight: '600', marginBottom: 8 },
-  previewLine: { marginBottom: 4, opacity: 0.8 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: 'rgba(255,255,255,0.95)' },
-  confirmButton: { borderRadius: 12 },
-  confirmButtonContent: { paddingVertical: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+  },
+  loadingText: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#E53935',
+    marginTop: 16,
+    letterSpacing: 2,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  headerCard: {
+    marginBottom: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#E53935',
+    borderRadius: 8,
+  },
+  title: {
+    fontFamily: typewriterFont,
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: '#E53935',
+    letterSpacing: 2,
+  },
+  subtitle: {
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    textAlign: 'center',
+    color: '#EF5350',
+    marginTop: 8,
+    opacity: 0.8,
+  },
+  summaryCard: {
+    marginBottom: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderRadius: 8,
+  },
+  sectionTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
+    color: '#E53935',
+    letterSpacing: 1,
+  },
+  changeItem: {
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    color: '#EF5350',
+    marginBottom: 4,
+  },
+  noChanges: {
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    color: '#888888',
+    fontStyle: 'italic',
+  },
+  optionsCard: {
+    marginBottom: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderRadius: 8,
+  },
+  optionItem: {
+    paddingVertical: 4,
+  },
+  optionTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E53935',
+  },
+  optionDescription: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    color: '#888888',
+  },
+  divider: {
+    backgroundColor: '#2A2A2A',
+  },
+  previewCard: {
+    backgroundColor: '#0A0A0A',
+    borderWidth: 1,
+    borderColor: '#B71C1C',
+    borderRadius: 8,
+  },
+  previewTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#E53935',
+    letterSpacing: 1,
+  },
+  previewLine: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    marginBottom: 4,
+    color: '#EF5350',
+    opacity: 0.9,
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    borderTopWidth: 1,
+    borderTopColor: '#2A2A2A',
+  },
+  confirmButton: {
+    borderRadius: 8,
+  },
+  confirmButtonContent: {
+    paddingVertical: 8,
+  },
+  confirmButtonLabel: {
+    fontFamily: typewriterFont,
+    fontWeight: '700',
+    letterSpacing: 2,
+    fontSize: 16,
+  },
 });
