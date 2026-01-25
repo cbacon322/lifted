@@ -8,6 +8,7 @@ import {
   useTheme,
   Portal,
   Modal,
+  Menu,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
 
@@ -48,6 +49,10 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   // Workout duration timer
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const startTimeRef = useRef<Date | null>(null);
+
+  // Exercise menu and details visibility
+  const [menuVisible, setMenuVisible] = useState<number | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState<Set<number>>(new Set());
 
   const userId = getDevUserId();
 
@@ -193,8 +198,22 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
     });
   };
 
+  const toggleDetailsVisible = (exerciseIndex: number) => {
+    setDetailsVisible(prev => {
+      const updated = new Set(prev);
+      if (updated.has(exerciseIndex)) {
+        updated.delete(exerciseIndex);
+      } else {
+        updated.add(exerciseIndex);
+      }
+      return updated;
+    });
+    setMenuVisible(null);
+  };
+
   const deleteExercise = (exerciseIndex: number) => {
     if (!workout) return;
+    setMenuVisible(null);
 
     Alert.alert(
       'Delete Exercise',
@@ -209,6 +228,12 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               if (!prev) return prev;
               const newExercises = prev.exercises.filter((_, i) => i !== exerciseIndex);
               return { ...prev, exercises: newExercises };
+            });
+            // Also remove from details visible
+            setDetailsVisible(prev => {
+              const updated = new Set(prev);
+              updated.delete(exerciseIndex);
+              return updated;
             });
           },
         },
@@ -320,16 +345,33 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               <Text style={[styles.exerciseName, { color: theme.colors.primary }]}>
                 {exercise.name}
               </Text>
-              <IconButton
-                icon="dots-horizontal"
-                size={20}
-                onPress={() => deleteExercise(exerciseIndex)}
-                style={styles.menuButton}
-              />
+              <Menu
+                visible={menuVisible === exerciseIndex}
+                onDismiss={() => setMenuVisible(null)}
+                anchor={
+                  <IconButton
+                    icon="dots-horizontal"
+                    size={20}
+                    onPress={() => setMenuVisible(exerciseIndex)}
+                    style={styles.menuButton}
+                  />
+                }
+              >
+                <Menu.Item
+                  onPress={() => toggleDetailsVisible(exerciseIndex)}
+                  title={detailsVisible.has(exerciseIndex) ? "Hide Details" : "Show Details"}
+                  leadingIcon={detailsVisible.has(exerciseIndex) ? "eye-off" : "eye"}
+                />
+                <Menu.Item
+                  onPress={() => deleteExercise(exerciseIndex)}
+                  title="Delete Exercise"
+                  leadingIcon="delete"
+                />
+              </Menu>
             </View>
 
-            {/* Notes */}
-            {exercise.notes && (
+            {/* Notes - only shown when details visible */}
+            {exercise.notes && detailsVisible.has(exerciseIndex) && (
               <Text style={styles.exerciseNotes}>{exercise.notes}</Text>
             )}
 
