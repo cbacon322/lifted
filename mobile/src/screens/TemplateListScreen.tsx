@@ -3,8 +3,6 @@ import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import {
   Text,
   Card,
-  Chip,
-  Button,
   ActivityIndicator,
   useTheme,
 } from 'react-native-paper';
@@ -37,6 +35,11 @@ export default function TemplateListScreen() {
     setRefreshing(true);
   };
 
+  const formatDate = (date: Date): string => {
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   const renderTemplate = ({ item }: { item: WorkoutTemplate }) => (
     <Card
       style={styles.card}
@@ -55,24 +58,10 @@ export default function TemplateListScreen() {
         <Text variant="bodySmall" style={styles.exerciseCount}>
           {item.exercises.length} exercise{item.exercises.length !== 1 ? 's' : ''}
         </Text>
-        {item.tags && item.tags.length > 0 && (
-          <View style={styles.tags}>
-            {item.tags.slice(0, 3).map((tag) => (
-              <Chip key={tag} compact style={styles.tag}>
-                {tag}
-              </Chip>
-            ))}
-          </View>
-        )}
+        <Text variant="bodySmall" style={styles.createdAt}>
+          Created {formatDate(item.createdAt)}
+        </Text>
       </Card.Content>
-      <Card.Actions>
-        <Button
-          mode="contained"
-          onPress={() => navigate({ name: 'ActiveWorkout', params: { templateId: item.id } })}
-        >
-          Start Workout
-        </Button>
-      </Card.Actions>
     </Card>
   );
 
@@ -139,14 +128,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     opacity: 0.6,
   },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  createdAt: {
     marginTop: 8,
-    gap: 4,
-  },
-  tag: {
-    height: 24,
+    opacity: 0.5,
+    fontStyle: 'italic',
   },
   emptyTitle: {
     marginBottom: 8,

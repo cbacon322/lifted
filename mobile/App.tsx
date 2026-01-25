@@ -1,7 +1,7 @@
 import React, { useState, createContext, useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider, Appbar } from 'react-native-paper';
 import { lightTheme } from './src/theme/theme';
@@ -81,15 +81,15 @@ function AppContent() {
 
   return (
     <NavigationContext.Provider value={{ screen, navigate, goBack, canGoBack }}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <Appbar.Header>
+      <View style={styles.container}>
+        <Appbar.Header mode="small" elevated>
           {canGoBack && <Appbar.BackAction onPress={goBack} />}
           <Appbar.Content title={getTitle(screen)} />
         </Appbar.Header>
         <View style={styles.content}>
           {renderScreen()}
         </View>
-      </SafeAreaView>
+      </View>
     </NavigationContext.Provider>
   );
 }
