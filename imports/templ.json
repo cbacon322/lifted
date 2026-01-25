@@ -1,0 +1,38 @@
+  {
+    "workouts": [
+      {
+        "name": "Push Day",
+        "description": "Chest, shoulders, and triceps",
+        "exercises": [
+          {
+            "name": "Bench Press",
+            "sets": [
+              { "weight": 60, "reps": 10 },
+              { "weight": 70, "reps": 8 },
+              { "weight": 80, "reps": 6 }
+            ],
+            "rest": 120
+          },
+          {
+            "name": "Overhead Press",
+            "sets": [
+              { "weight": 40, "reps": 10 },
+              { "weight": 40, "reps": 10 },
+              { "weight": 40, "reps": 10 }
+            ],
+            "rest": 90
+          },
+          {
+            "name": "Tricep Pushdowns",
+            "sets": [
+              { "weight": 25, "reps": 12 },
+              { "weight": 25, "reps": 12 },
+              { "weight": 25, "reps": 12 }
+            ],
+            "rest": 60
+          }
+        ],
+        "tags": ["push", "chest", "upper body"]
+      }
+    ]
+  }

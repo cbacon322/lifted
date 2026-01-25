@@ -1,0 +1,468 @@
+{
+  "workouts": [
+    {
+      "name": "Day 1 — Upper Strength + Arms",
+      "description": "Push/Pull focus with arm work and shoulder-safe exercises",
+      "exercises": [
+        {
+          "name": "Lat/Teres Release",
+          "notes": "Use a ball against the wall, rolling along the outer armpit and side rib cage. Frees tissues limiting overhead mobility.",
+          "sets": [
+            { "time": 60 }
+          ]
+        },
+        {
+          "name": "Wall Lat Press",
+          "notes": "Stand facing wall, elbows at shoulder height. Press gently while allowing ribs to expand.",
+          "sets": [
+            { "time": 10 },
+            { "time": 10 }
+          ]
+        },
+        {
+          "name": "Serratus Wall Slides",
+          "notes": "Forearms on wall, slide upward while pushing shoulder blades forward. Trains upward rotation, reduces impingement risk.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 }
+          ]
+        },
+        {
+          "name": "Band External Rotations",
+          "notes": "Elbow tucked to ribs, rotate hand outward against band. Strengthens rotator cuff, improves humeral stability.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 }
+          ]
+        },
+        {
+          "name": "Low-Incline DB Press",
+          "notes": "Bench at 15–30°. Press with elbows tucked 30°. Safer on shoulder, loads chest well.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 },
+            { "reps": 8 },
+            { "reps": 8 }
+          ],
+          "rest": 120
+        },
+        {
+          "name": "Chest-Supported DB Row",
+          "notes": "Chest on incline bench. Row dumbbells toward hip. Protects spine, lets upper back do all the work.",
+          "sets": [
+            { "reps": 10 },
+            { "reps": 10 },
+            { "reps": 10 },
+            { "reps": 10 }
+          ],
+          "rest": 90
+        },
+        {
+          "name": "One-Arm Cable Row",
+          "notes": "Neutral grip, pull elbow toward pocket. Great for fixing left–right imbalance.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 },
+            { "reps": 12 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Cable Chest Press (neutral)",
+          "notes": "Neutral grip cable press. Smooth resistance avoids joint irritation.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 },
+            { "reps": 8 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Serratus Cable Punch",
+          "notes": "Extend arm fully while letting shoulder blade glide forward. Best exercise for fixing shoulder elevation limitations.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 },
+            { "reps": 12 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Hammer Curls",
+          "notes": "Neutral grip curl reduces strain on ulnar nerve. Ideal when standard curls cause nerve symptoms.",
+          "sets": [
+            { "reps": 10 },
+            { "reps": 10 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Cable Tricep Pushdown",
+          "notes": "Elbows pinned to sides, push bar or rope down. Minimal elbow flare — good for sensitive nerve pathways.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Dead Bug",
+          "notes": "Opposite arm/leg extension while keeping ribs down. Builds deep core stability.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 }
+          ]
+        },
+        {
+          "name": "Side Plank",
+          "notes": "Knees or feet stacked. Strengthens obliques and lateral core.",
+          "sets": [
+            { "time": 20 },
+            { "time": 20 }
+          ]
+        },
+        {
+          "name": "Telephone Waiter Glide",
+          "notes": "Arm abducted ~90°, wrist extended slightly, head tilts away. STOP if tingling occurs.",
+          "sets": [
+            { "reps": 10 }
+          ]
+        }
+      ],
+      "tags": ["upper", "push", "pull", "arms"]
+    },
+    {
+      "name": "Day 2 — Conditioning + Knee Rehab",
+      "description": "Court work with knee rehabilitation focus",
+      "exercises": [
+        {
+          "name": "Glute Med Walk",
+          "notes": "Band around ankles or knees. Step sideways under control. Trains hip stabilizers.",
+          "sets": [
+            { "reps": 10 },
+            { "reps": 10 }
+          ]
+        },
+        {
+          "name": "Tibialis Raises",
+          "notes": "Lean against wall, lift toes upward. Strengthens tibialis anterior for knee tracking.",
+          "sets": [
+            { "reps": 15 },
+            { "reps": 15 }
+          ]
+        },
+        {
+          "name": "Hip Airplanes",
+          "notes": "Hinge on one leg while opening/closing hips. 5 reps per side.",
+          "sets": [
+            { "reps": 5 },
+            { "reps": 5 }
+          ]
+        },
+        {
+          "name": "Step-Downs",
+          "notes": "Control descent while keeping knee aligned over second toe. Retrains knee tracking.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 },
+            { "reps": 8 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Single-Leg RDL",
+          "notes": "Hip hinge on one leg with slight knee bend. Strengthens glute/hamstring, improves balance.",
+          "sets": [
+            { "reps": 6 },
+            { "reps": 6 },
+            { "reps": 6 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Band Lateral Walks",
+          "notes": "Glute activation drill. Keeps pelvis stable during cutting and squatting.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 }
+          ]
+        },
+        {
+          "name": "Dribbling",
+          "notes": "Court work - ball handling practice",
+          "sets": [
+            {}
+          ]
+        },
+        {
+          "name": "Shooting",
+          "notes": "Court work - shooting practice",
+          "sets": [
+            {}
+          ]
+        },
+        {
+          "name": "Conditioning",
+          "notes": "Court work - conditioning drills",
+          "sets": [
+            {}
+          ]
+        },
+        {
+          "name": "Post-Conditioning Free Throws",
+          "notes": "Practice free throws while fatigued",
+          "sets": [
+            {}
+          ]
+        },
+        {
+          "name": "Thread the Needle",
+          "notes": "Thoracic rotation mobility drill",
+          "sets": [
+            { "time": 20 },
+            { "time": 20 }
+          ]
+        },
+        {
+          "name": "Child's Pose Side Bend",
+          "notes": "Lat and side body stretch",
+          "sets": [
+            { "time": 20 },
+            { "time": 20 }
+          ]
+        },
+        {
+          "name": "Gentle Lat Stretch",
+          "notes": "Light lat stretch — don't overdo it",
+          "sets": [
+            { "time": 25 }
+          ]
+        }
+      ],
+      "tags": ["conditioning", "knee rehab", "basketball"]
+    },
+    {
+      "name": "Day 3 — Heavy Lower + Athletic Strength",
+      "description": "Main lower body strength day with sled work",
+      "exercises": [
+        {
+          "name": "Band Lateral Walks",
+          "notes": "Glute activation drill. Keeps pelvis stable.",
+          "sets": [
+            { "reps": 10 },
+            { "reps": 10 }
+          ]
+        },
+        {
+          "name": "Tibialis Raises",
+          "notes": "Lean against wall, lift toes upward. Strengthens tibialis anterior.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 }
+          ]
+        },
+        {
+          "name": "Hip Hinge Patterning",
+          "notes": "Practice the hip hinge movement pattern before heavy lifts",
+          "sets": [
+            { "reps": 10 }
+          ]
+        },
+        {
+          "name": "Light Sled Drag",
+          "notes": "Warm-up sled work — 20m",
+          "sets": [
+            { "distance": 20 }
+          ]
+        },
+        {
+          "name": "Trap Bar Deadlift",
+          "notes": "Neutral grip deadlift reduces spinal shear and shoulder stress. Ideal main lift.",
+          "sets": [
+            { "reps": 5 },
+            { "reps": 5 },
+            { "reps": 5 },
+            { "reps": 5 }
+          ],
+          "rest": 180
+        },
+        {
+          "name": "Reverse Sled Drag",
+          "notes": "Walk backward pulling sled. Massive quad builder with almost zero joint load. 20–40m per set.",
+          "sets": [
+            { "distance": 30 },
+            { "distance": 30 },
+            { "distance": 30 },
+            { "distance": 30 }
+          ],
+          "rest": 90
+        },
+        {
+          "name": "Hamstring Curl",
+          "notes": "Seated or lying curl. Strengthens hamstrings to balance quad load.",
+          "sets": [
+            { "reps": 10 },
+            { "reps": 10 },
+            { "reps": 10 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Quad Extension (VMO focus)",
+          "notes": "Light, controlled quad extensions focusing on top 20° of ROM. Targets VMO.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 },
+            { "reps": 12 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Lateral Sled Drag",
+          "notes": "Sideways movement strengthening glute med. 20m each side.",
+          "sets": [
+            { "distance": 20 },
+            { "distance": 20 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Sled Push (Optional)",
+          "notes": "Leg drive conditioning with stable knee angles. 15–20m per set.",
+          "sets": [
+            { "distance": 18 },
+            { "distance": 18 }
+          ]
+        },
+        {
+          "name": "Pallof Press",
+          "notes": "Anti-rotation press that strengthens obliques and spinal stabilizers.",
+          "sets": [
+            { "reps": 10 },
+            { "reps": 10 }
+          ]
+        },
+        {
+          "name": "Marching Farmer Carry",
+          "notes": "Farmer carry with high knee march. 20m per set.",
+          "sets": [
+            { "distance": 20 },
+            { "distance": 20 }
+          ]
+        }
+      ],
+      "tags": ["lower", "strength", "sled", "athletic"]
+    },
+    {
+      "name": "Day 4 — PT + Mobility + Posterior Chain",
+      "description": "Recovery day focusing on mobility, stability, and posterior chain",
+      "exercises": [
+        {
+          "name": "Thoracic Rotations",
+          "notes": "Gentle thoracic spine rotation — 8 reps per side",
+          "sets": [
+            { "reps": 8 }
+          ]
+        },
+        {
+          "name": "Child's Pose Side Bend",
+          "notes": "Lat and side body stretch — 20s per side",
+          "sets": [
+            { "time": 20 }
+          ]
+        },
+        {
+          "name": "Rib Expand Overhead Reach",
+          "notes": "Focus on ribcage expansion — 5 deep breaths",
+          "sets": [
+            { "reps": 5 }
+          ]
+        },
+        {
+          "name": "Wall Lat Press",
+          "notes": "Stand facing wall, elbows at shoulder height. Press gently while allowing ribs to expand.",
+          "sets": [
+            { "time": 10 },
+            { "time": 10 }
+          ]
+        },
+        {
+          "name": "Quadruped Rockback + Reach",
+          "notes": "Rock hips back while reaching one arm forward. Improves scapular control and shoulder flexion.",
+          "sets": [
+            { "reps": 6 },
+            { "reps": 6 }
+          ]
+        },
+        {
+          "name": "Bear Hold",
+          "notes": "Quadruped position with knees barely off floor. Trains cross-body stability.",
+          "sets": [
+            { "time": 15 },
+            { "time": 15 }
+          ]
+        },
+        {
+          "name": "Incline Plank",
+          "notes": "Hands elevated on bench. Builds core stability without shoulder irritation.",
+          "sets": [
+            { "time": 20 },
+            { "time": 20 },
+            { "time": 20 }
+          ]
+        },
+        {
+          "name": "Pallof Press + Torque",
+          "notes": "Anti-rotation press with added rotation component.",
+          "sets": [
+            { "weight": 25, "reps": 10 },
+            { "weight": 25, "reps": 10 }
+          ]
+        },
+        {
+          "name": "Cable Pull-Throughs",
+          "notes": "Hip hinge with cable behind you. Loads glutes/hamstrings safely.",
+          "sets": [
+            { "reps": 12 },
+            { "reps": 12 },
+            { "reps": 12 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Step-Down Reinforcement",
+          "notes": "Lighter step-down work to reinforce proper knee tracking pattern.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 }
+          ]
+        },
+        {
+          "name": "GHD Back Extensions",
+          "notes": "Hinge at hips, not spine. Strengthens glutes, hamstrings, spinal erectors.",
+          "sets": [
+            { "reps": 8 },
+            { "reps": 8 },
+            { "reps": 8 }
+          ],
+          "rest": 60
+        },
+        {
+          "name": "Telephone Waiter Glide",
+          "notes": "Arm abducted ~90°, wrist extended slightly, head tilts away. STOP if tingling occurs.",
+          "sets": [
+            { "reps": 10 }
+          ]
+        },
+        {
+          "name": "Wrist–Elbow Glide",
+          "notes": "Elbow flexes while wrist extends, then reverse. Low-tension nerve flossing.",
+          "sets": [
+            { "reps": 9 }
+          ]
+        }
+      ],
+      "tags": ["mobility", "PT", "posterior chain", "recovery"]
+    }
+  ]
+}
