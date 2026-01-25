@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput as RNTextInput } from 'react-native';
 import {
   Text,
   Button,
   IconButton,
-  TextInput,
   useTheme,
   Portal,
   Modal,
@@ -397,7 +396,7 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
                     styles.setRow,
                     set.completed && styles.setRowCompleted
                   ]}>
-                    <Text style={[styles.cell, styles.setCol, set.completed && styles.completedText]}>
+                    <Text style={[styles.cell, styles.setColData, set.completed && styles.completedText]}>
                       {setIndex + 1}
                     </Text>
                     <TouchableOpacity
@@ -408,23 +407,21 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
                         {prevSet ? formatPreviousSet(prevSet.weight, prevSet.reps, prevSet.time) : '—'}
                       </Text>
                     </TouchableOpacity>
-                    <TextInput
-                      style={[styles.input, styles.inputCol, set.completed && styles.inputCompleted]}
-                      mode="outlined"
-                      dense
+                    <RNTextInput
+                      style={[styles.input, set.completed && styles.inputCompleted]}
                       keyboardType="numeric"
                       value={set.actualWeight?.toString() || ''}
                       onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'weight', v)}
                       placeholder={set.targetWeight?.toString()}
+                      placeholderTextColor="#999"
                     />
-                    <TextInput
-                      style={[styles.input, styles.inputCol, set.completed && styles.inputCompleted]}
-                      mode="outlined"
-                      dense
+                    <RNTextInput
+                      style={[styles.input, set.completed && styles.inputCompleted]}
                       keyboardType="numeric"
                       value={set.actualReps?.toString() || ''}
                       onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'reps', v)}
                       placeholder={set.targetReps?.toString()}
+                      placeholderTextColor="#999"
                     />
                     <IconButton
                       icon={set.completed ? 'check-circle' : 'circle-outline'}
@@ -542,6 +539,7 @@ const styles = StyleSheet.create({
   setsHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   headerCell: { fontSize: 11, fontWeight: '600', opacity: 0.5, textTransform: 'uppercase' },
   setCol: { width: 28 },
+  setColData: { width: 28, textAlign: 'right', paddingRight: 8 },
   prevCol: { flex: 1, paddingRight: 4 },
   inputCol: { width: 52, marginHorizontal: 2 },
   checkCol: { width: 36 },
@@ -559,7 +557,19 @@ const styles = StyleSheet.create({
   cell: { fontSize: 14 },
   completedText: { fontWeight: '600' },
   prevText: { opacity: 0.5, fontSize: 13 },
-  input: { height: 32, fontSize: 13 },
+  input: {
+    width: 52,
+    height: 28,
+    fontSize: 13,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    textAlign: 'center',
+    backgroundColor: '#FAFAFA',
+  },
   inputCompleted: { backgroundColor: 'rgba(76, 175, 80, 0.1)' },
   checkButton: { margin: 0 },
 

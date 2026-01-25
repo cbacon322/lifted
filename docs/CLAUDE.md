@@ -189,6 +189,55 @@ const firebaseConfig = {
 
 ---
 
+## Feature Implementation Details
+
+### Previous Workout Data ("Previous" Column)
+
+**Location:** `shared/services/firebase/firestoreService.ts` - `getPreviousWorkoutData()` function (line ~233)
+
+**How it works:**
+1. When a workout is started, the app calls `getPreviousWorkoutData(userId, exerciseNames)`
+2. This queries the user's `workouts` collection for the last 50 completed workouts (`isActive == false`)
+3. For each exercise in the current workout, it searches those workouts to find the most recent one containing that exercise
+4. It extracts the completed sets with their actual weight, reps, and time values
+5. Returns a `Map<string, PreviousWorkoutData>` keyed by lowercase exercise name
+
+**Data structure returned:**
+```typescript
+interface PreviousWorkoutData {
+  exerciseId: string;
+  exerciseName: string;
+  lastPerformed: Date;
+  sets: PreviousSetData[];  // Array of { setNumber, weight, reps, time }
+}
+```
+
+**UI behavior:**
+- Previous values displayed in "Previous" column on ActiveWorkoutScreen
+- Formatted as "135x10" (weight x reps) or time format
+- Shows "—" if no previous data exists for that exercise
+- **Tapping the previous value** auto-fills those numbers into the current set (via `fillFromPrevious()`)
+
+**Firebase query:**
+```typescript
+const q = query(
+  workoutsRef,
+  where('isActive', '==', false),
+  orderBy('startTime', 'desc'),
+  limit(50)
+);
+```
+
+**Note for Calendar/History features:** This same data can be used to build:
+- Calendar view showing workout days
+- Exercise history graphs
+- Personal records tracking
+- Volume analysis
+
+The workout documents in `users/{userId}/workouts/` contain full exercise snapshots with actual values, so all historical data is preserved.
+
+---
+
 ## Technical Challenges & Solutions
 
 ### Challenge: Firebase Date Handling
