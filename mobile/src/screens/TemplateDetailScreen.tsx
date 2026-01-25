@@ -482,8 +482,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingBottom: 32,
+    padding: 12,
+    paddingBottom: 24,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -491,11 +491,9 @@ const styles = StyleSheet.create({
   },
   halfButton: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 8,
   },
-  buttonContent: {
-    paddingVertical: 8,
-  },
+  buttonContent: {},
   modal: {
     margin: 20,
     padding: 20,

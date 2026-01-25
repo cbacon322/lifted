@@ -18,6 +18,7 @@ interface NavigationContextType {
   navigate: (screen: Screen) => void;
   goBack: () => void;
   canGoBack: boolean;
+  setTitle: (title: string) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | null>(null);
@@ -45,16 +46,23 @@ function getTitle(screen: Screen): string {
 
 function AppContent() {
   const [history, setHistory] = useState<Screen[]>([{ name: 'TemplateList' }]);
+  const [customTitle, setCustomTitle] = useState<string | null>(null);
   const screen = history[history.length - 1];
 
   const navigate = (newScreen: Screen) => {
+    setCustomTitle(null);
     setHistory(prev => [...prev, newScreen]);
   };
 
   const goBack = () => {
     if (history.length > 1) {
+      setCustomTitle(null);
       setHistory(prev => prev.slice(0, -1));
     }
+  };
+
+  const setTitle = (title: string) => {
+    setCustomTitle(title);
   };
 
   const canGoBack = history.length > 1 &&
@@ -80,11 +88,11 @@ function AppContent() {
   };
 
   return (
-    <NavigationContext.Provider value={{ screen, navigate, goBack, canGoBack }}>
+    <NavigationContext.Provider value={{ screen, navigate, goBack, canGoBack, setTitle }}>
       <View style={styles.container}>
         <Appbar.Header mode="small" elevated>
           {canGoBack && <Appbar.BackAction onPress={goBack} />}
-          <Appbar.Content title={getTitle(screen)} />
+          <Appbar.Content title={customTitle || getTitle(screen)} />
         </Appbar.Header>
         <View style={styles.content}>
           {renderScreen()}
