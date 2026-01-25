@@ -340,8 +340,8 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        <Button mode="outlined" onPress={handleCancelWorkout} style={styles.cancelButton}>Cancel</Button>
-        <Button mode="contained" onPress={handleFinishWorkout} style={styles.finishButton}>Finish Workout</Button>
+        <Button mode="outlined" onPress={handleCancelWorkout} style={styles.halfButton} contentStyle={styles.buttonContent}>Cancel</Button>
+        <Button mode="contained" onPress={handleFinishWorkout} style={styles.halfButton} contentStyle={styles.buttonContent}>Finish</Button>
       </View>
 
       <Portal>
@@ -378,9 +378,9 @@ const styles = StyleSheet.create({
   checkCol: { width: 40, margin: 0 },
   input: { height: 36, fontSize: 14 },
   addSetButton: { marginTop: 8 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', padding: 16, backgroundColor: 'rgba(255,255,255,0.95)', gap: 12 },
-  cancelButton: { flex: 1 },
-  finishButton: { flex: 2 },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', padding: 16, paddingBottom: 32, backgroundColor: 'rgba(255,255,255,0.95)', gap: 12 },
+  halfButton: { flex: 1, borderRadius: 12 },
+  buttonContent: { paddingVertical: 8 },
   restTimerModal: { backgroundColor: 'white', margin: 20, padding: 40, borderRadius: 16, alignItems: 'center' },
   restTimerText: { fontWeight: '700', marginBottom: 8 },
   restTimerButtons: { flexDirection: 'row', gap: 16, marginTop: 24 },

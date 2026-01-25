@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import {
   Text,
   Button,
@@ -8,12 +8,13 @@ import {
   Portal,
   Modal,
   Divider,
+  IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
 
 // Import from shared
 import { WorkoutTemplate, Exercise, Set } from '../../../shared/models';
-import { getTemplate, getDevUserId } from '../../../shared/services/firebase';
+import { getTemplate, updateTemplate, getDevUserId } from '../../../shared/services/firebase';
 
 interface Props {
   templateId: string;
@@ -25,6 +26,11 @@ export default function TemplateDetailScreen({ templateId }: Props) {
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTemplate, setEditedTemplate] = useState<WorkoutTemplate | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const userId = getDevUserId();
 
@@ -43,12 +49,85 @@ export default function TemplateDetailScreen({ templateId }: Props) {
     }
   };
 
+  const startEditing = () => {
+    if (template) {
+      // Deep clone the template for editing
+      setEditedTemplate(JSON.parse(JSON.stringify(template)));
+      setIsEditing(true);
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditedTemplate(null);
+    setIsEditing(false);
+  };
+
+  const saveChanges = async () => {
+    if (!editedTemplate) return;
+
+    setSaving(true);
+    try {
+      await updateTemplate(userId, templateId, {
+        name: editedTemplate.name,
+        description: editedTemplate.description,
+        exercises: editedTemplate.exercises,
+      });
+      setTemplate(editedTemplate);
+      setIsEditing(false);
+      setEditedTemplate(null);
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      Alert.alert('Error', 'Failed to save changes. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateExerciseName = (exerciseIndex: number, name: string) => {
+    if (!editedTemplate) return;
+    const updated = { ...editedTemplate };
+    updated.exercises[exerciseIndex].name = name;
+    setEditedTemplate(updated);
+  };
+
+  const updateExerciseSet = (exerciseIndex: number, setIndex: number, field: 'targetReps' | 'targetWeight', value: string) => {
+    if (!editedTemplate) return;
+    const updated = { ...editedTemplate };
+    const numValue = parseInt(value) || 0;
+    updated.exercises[exerciseIndex].sets[setIndex][field] = numValue || undefined;
+    setEditedTemplate(updated);
+  };
+
+  const addSet = (exerciseIndex: number) => {
+    if (!editedTemplate) return;
+    const updated = { ...editedTemplate };
+    const exercise = updated.exercises[exerciseIndex];
+    const lastSet = exercise.sets[exercise.sets.length - 1];
+    const newSet: Set = {
+      id: `set_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      targetReps: lastSet?.targetReps,
+      targetWeight: lastSet?.targetWeight,
+      targetTime: lastSet?.targetTime,
+      targetDistance: lastSet?.targetDistance,
+    };
+    exercise.sets.push(newSet);
+    setEditedTemplate(updated);
+  };
+
+  const removeSet = (exerciseIndex: number, setIndex: number) => {
+    if (!editedTemplate) return;
+    const updated = { ...editedTemplate };
+    if (updated.exercises[exerciseIndex].sets.length > 1) {
+      updated.exercises[exerciseIndex].sets.splice(setIndex, 1);
+      setEditedTemplate(updated);
+    }
+  };
+
   const formatSetSummary = (sets: Set[]): string => {
     if (sets.length === 0) return '—';
 
     const firstSet = sets[0];
 
-    // Check what type of set this is
     if (firstSet.targetTime) {
       const minutes = Math.floor(firstSet.targetTime / 60);
       const seconds = firstSet.targetTime % 60;
@@ -99,59 +178,164 @@ export default function TemplateDetailScreen({ templateId }: Props) {
     );
   }
 
+  const displayTemplate = isEditing ? editedTemplate : template;
+  if (!displayTemplate) return null;
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="titleLarge" style={styles.title}>
-            {template.name}
-          </Text>
-          {template.description && (
-            <Text variant="bodyMedium" style={styles.description}>
-              {template.description}
+          {isEditing ? (
+            <TextInput
+              style={[styles.titleInput, { color: theme.colors.onBackground }]}
+              value={editedTemplate?.name || ''}
+              onChangeText={(text) => setEditedTemplate(prev => prev ? { ...prev, name: text } : null)}
+              placeholder="Workout name"
+            />
+          ) : (
+            <Text variant="titleLarge" style={styles.title}>
+              {displayTemplate.name}
             </Text>
+          )}
+          {isEditing ? (
+            <TextInput
+              style={[styles.descriptionInput, { color: theme.colors.onBackground }]}
+              value={editedTemplate?.description || ''}
+              onChangeText={(text) => setEditedTemplate(prev => prev ? { ...prev, description: text } : null)}
+              placeholder="Description (optional)"
+              multiline
+            />
+          ) : (
+            displayTemplate.description && (
+              <Text variant="bodyMedium" style={styles.description}>
+                {displayTemplate.description}
+              </Text>
+            )
           )}
         </View>
 
         {/* Exercises - Compact List */}
         <View style={styles.exerciseList}>
-          {template.exercises.map((exercise, index) => (
+          {displayTemplate.exercises.map((exercise, exerciseIndex) => (
             <View key={exercise.id}>
-              <TouchableOpacity
-                style={styles.exerciseRow}
-                onPress={() => setSelectedExercise(exercise)}
-                activeOpacity={0.6}
-              >
-                <Text variant="bodyMedium" style={styles.exerciseName} numberOfLines={1}>
-                  {exercise.name}
-                </Text>
-                <Text variant="bodySmall" style={styles.exerciseSummary}>
-                  {formatSetSummary(exercise.sets)}
-                </Text>
-              </TouchableOpacity>
-              {index < template.exercises.length - 1 && <Divider />}
+              {isEditing ? (
+                <View style={styles.editExerciseRow}>
+                  <TextInput
+                    style={[styles.exerciseNameInput, { color: theme.colors.onBackground }]}
+                    value={exercise.name}
+                    onChangeText={(text) => updateExerciseName(exerciseIndex, text)}
+                  />
+                  <View style={styles.editSets}>
+                    {exercise.sets.map((set, setIndex) => (
+                      <View key={set.id} style={styles.editSetRow}>
+                        <Text variant="bodySmall" style={styles.setLabel}>Set {setIndex + 1}</Text>
+                        <TextInput
+                          style={styles.setInput}
+                          value={set.targetReps?.toString() || ''}
+                          onChangeText={(text) => updateExerciseSet(exerciseIndex, setIndex, 'targetReps', text)}
+                          keyboardType="numeric"
+                          placeholder="reps"
+                        />
+                        <Text variant="bodySmall"> × </Text>
+                        <TextInput
+                          style={styles.setInput}
+                          value={set.targetWeight?.toString() || ''}
+                          onChangeText={(text) => updateExerciseSet(exerciseIndex, setIndex, 'targetWeight', text)}
+                          keyboardType="numeric"
+                          placeholder="lbs"
+                        />
+                        <Text variant="bodySmall"> lbs</Text>
+                        {exercise.sets.length > 1 && (
+                          <IconButton
+                            icon="minus-circle-outline"
+                            size={18}
+                            onPress={() => removeSet(exerciseIndex, setIndex)}
+                            style={styles.removeSetButton}
+                          />
+                        )}
+                      </View>
+                    ))}
+                    <Button
+                      mode="text"
+                      compact
+                      onPress={() => addSet(exerciseIndex)}
+                      style={styles.addSetButton}
+                    >
+                      + Add Set
+                    </Button>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.exerciseRow}
+                  onPress={() => setSelectedExercise(exercise)}
+                  activeOpacity={0.6}
+                >
+                  <Text variant="bodyMedium" style={styles.exerciseName} numberOfLines={1}>
+                    {exercise.name}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.exerciseSummary}>
+                    {formatSetSummary(exercise.sets)}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {exerciseIndex < displayTemplate.exercises.length - 1 && <Divider />}
             </View>
           ))}
         </View>
       </ScrollView>
 
-      {/* Start Workout Button */}
+      {/* Bottom Bar */}
       <View style={[styles.bottomBar, { backgroundColor: theme.colors.background }]}>
-        <Button
-          mode="contained"
-          style={styles.startButton}
-          contentStyle={styles.startButtonContent}
-          onPress={() => navigate({ name: 'ActiveWorkout', params: { templateId: template.id } })}
-        >
-          Start Workout
-        </Button>
+        {isEditing ? (
+          <View style={styles.buttonRow}>
+            <Button
+              mode="outlined"
+              onPress={cancelEditing}
+              style={styles.halfButton}
+              contentStyle={styles.buttonContent}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={saveChanges}
+              style={styles.halfButton}
+              contentStyle={styles.buttonContent}
+              loading={saving}
+              disabled={saving}
+            >
+              Save
+            </Button>
+          </View>
+        ) : (
+          <View style={styles.buttonRow}>
+            <Button
+              mode="outlined"
+              onPress={startEditing}
+              style={styles.halfButton}
+              contentStyle={styles.buttonContent}
+            >
+              Edit
+            </Button>
+            <Button
+              mode="contained"
+              style={styles.halfButton}
+              contentStyle={styles.buttonContent}
+              onPress={() => navigate({ name: 'ActiveWorkout', params: { templateId: template.id } })}
+            >
+              Start
+            </Button>
+          </View>
+        )}
       </View>
 
       {/* Exercise Details Modal */}
       <Portal>
         <Modal
-          visible={selectedExercise !== null}
+          visible={selectedExercise !== null && !isEditing}
           onDismiss={() => setSelectedExercise(null)}
           contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
         >
@@ -216,9 +400,25 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: '700',
   },
+  titleInput: {
+    flex: 1,
+    fontSize: 22,
+    fontWeight: '700',
+    padding: 8,
+    backgroundColor: 'white',
+    borderRadius: 8,
+  },
   description: {
     marginTop: 4,
     opacity: 0.7,
+  },
+  descriptionInput: {
+    marginTop: 8,
+    fontSize: 14,
+    padding: 8,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    minHeight: 40,
   },
   exerciseList: {
     backgroundColor: 'white',
@@ -239,6 +439,44 @@ const styles = StyleSheet.create({
   exerciseSummary: {
     opacity: 0.6,
   },
+  editExerciseRow: {
+    paddingVertical: 12,
+  },
+  exerciseNameInput: {
+    fontSize: 16,
+    fontWeight: '500',
+    padding: 8,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  editSets: {
+    marginLeft: 8,
+  },
+  editSetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  setLabel: {
+    width: 50,
+    opacity: 0.6,
+  },
+  setInput: {
+    width: 50,
+    padding: 6,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 4,
+    textAlign: 'center',
+  },
+  removeSetButton: {
+    margin: 0,
+    marginLeft: 4,
+  },
+  addSetButton: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -247,10 +485,15 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
-  startButton: {
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfButton: {
+    flex: 1,
     borderRadius: 12,
   },
-  startButtonContent: {
+  buttonContent: {
     paddingVertical: 8,
   },
   modal: {
