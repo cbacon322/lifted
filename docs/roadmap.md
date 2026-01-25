@@ -4,12 +4,12 @@ A running list of things I want to complete. These should not be attempted until
 
 - When finish workout is clicked, the empty exercises prompt lists every skipped exercise in a comma delimited, its too wordy and hard to read. can we have each exercise be on a new line for easier reading
 
-- when i complete a workout, it says error failed to load workouit data and goes back to the active workout. typerror cannot read property prototype of undefined. But hitting cancel lets me go back to the workouts page
-
-- uses kg instead of lbs, fix that.
-
-- add more padding on the bottom... the start workout button in the workout details pages is too close to the bottom of the screen
-
-- the cards for each exercise in the workout details pages show set and target tables like what shows in the active workout, and they each have a card that takes up too much space. I want all the exercise to fit or almost fit on the screen at once, each one saying the name, sets x reps (or distance or time or whatever) and a question mark button next to it that will pop up a window for details on the exercise
+- when i complete a workout, it says error failed to load workout data and goes back to the active workout. typerror cannot read property prototype of undefined. But hitting cancel lets me go back to the workouts page
 
 - empty workout button on Workouts page
+
+- change the template structure to include groups. That way in the details i can see that this part is the warmup, this is the main workout (not sure what to name this group) and another group could be cardio. 
+
+- in edit workout and in the active workout, i should be able to hold an exercise and then drag it to a different spot in the workout in order to change the order of the lifts
+
+- i also want a group that is like "postponed" or something for exercises that i want to eventually incorporate into the lift but not today. So that could be like a dropdown at the bottom of every workout details/active workout that can be moved 
