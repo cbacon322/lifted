@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import {
   Text,
-  Card,
   Button,
   ActivityIndicator,
   useTheme,
+  Portal,
+  Modal,
   Divider,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
 
 // Import from shared
-import { WorkoutTemplate, Set } from '../../../shared/models';
+import { WorkoutTemplate, Exercise, Set } from '../../../shared/models';
 import { getTemplate, getDevUserId } from '../../../shared/services/firebase';
 
 interface Props {
@@ -23,6 +24,7 @@ export default function TemplateDetailScreen({ templateId }: Props) {
   const { navigate, goBack } = useNavigation();
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
 
   const userId = getDevUserId();
 
@@ -41,19 +43,43 @@ export default function TemplateDetailScreen({ templateId }: Props) {
     }
   };
 
-  const formatSet = (set: Set): string => {
+  const formatSetSummary = (sets: Set[]): string => {
+    if (sets.length === 0) return '—';
+
+    const firstSet = sets[0];
+
+    // Check what type of set this is
+    if (firstSet.targetTime) {
+      const minutes = Math.floor(firstSet.targetTime / 60);
+      const seconds = firstSet.targetTime % 60;
+      const timeStr = minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`;
+      return `${sets.length} × ${timeStr}`;
+    }
+    if (firstSet.targetDistance) {
+      return `${sets.length} × ${firstSet.targetDistance}m`;
+    }
+    if (firstSet.targetWeight && firstSet.targetReps) {
+      return `${sets.length} × ${firstSet.targetReps} @ ${firstSet.targetWeight} lbs`;
+    }
+    if (firstSet.targetReps) {
+      return `${sets.length} × ${firstSet.targetReps}`;
+    }
+    return `${sets.length} sets`;
+  };
+
+  const formatSetDetail = (set: Set, index: number): string => {
+    const parts: string[] = [`Set ${index + 1}:`];
+
+    if (set.targetReps) parts.push(`${set.targetReps} reps`);
+    if (set.targetWeight) parts.push(`@ ${set.targetWeight} lbs`);
     if (set.targetTime) {
       const minutes = Math.floor(set.targetTime / 60);
       const seconds = set.targetTime % 60;
-      return minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`;
+      parts.push(minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`);
     }
-    if (set.targetWeight && set.targetReps) {
-      return `${set.targetWeight} kg × ${set.targetReps}`;
-    }
-    if (set.targetReps) {
-      return `${set.targetReps} reps`;
-    }
-    return '—';
+    if (set.targetDistance) parts.push(`${set.targetDistance}m`);
+
+    return parts.join(' ');
   };
 
   if (loading) {
@@ -78,7 +104,7 @@ export default function TemplateDetailScreen({ templateId }: Props) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="headlineMedium" style={styles.title}>
+          <Text variant="titleLarge" style={styles.title}>
             {template.name}
           </Text>
           {template.description && (
@@ -88,50 +114,30 @@ export default function TemplateDetailScreen({ templateId }: Props) {
           )}
         </View>
 
-        {/* Exercises */}
-        {template.exercises.map((exercise) => (
-          <Card key={exercise.id} style={styles.exerciseCard} mode="elevated">
-            <Card.Content>
-              <Text variant="titleMedium" style={styles.exerciseName}>
-                {exercise.name}
-              </Text>
-              {exercise.notes && (
-                <Text variant="bodySmall" style={styles.exerciseNotes}>
-                  {exercise.notes}
+        {/* Exercises - Compact List */}
+        <View style={styles.exerciseList}>
+          {template.exercises.map((exercise, index) => (
+            <View key={exercise.id}>
+              <TouchableOpacity
+                style={styles.exerciseRow}
+                onPress={() => setSelectedExercise(exercise)}
+                activeOpacity={0.6}
+              >
+                <Text variant="bodyMedium" style={styles.exerciseName} numberOfLines={1}>
+                  {exercise.name}
                 </Text>
-              )}
-
-              {/* Sets */}
-              <View style={styles.setsContainer}>
-                <View style={styles.setsHeader}>
-                  <Text variant="labelSmall" style={styles.setLabel}>Set</Text>
-                  <Text variant="labelSmall" style={styles.setLabel}>Target</Text>
-                </View>
-                <Divider style={styles.divider} />
-                {exercise.sets.map((set, setIndex) => (
-                  <View key={set.id} style={styles.setRow}>
-                    <Text variant="bodyMedium" style={styles.setNumber}>
-                      {setIndex + 1}
-                    </Text>
-                    <Text variant="bodyMedium" style={styles.setTarget}>
-                      {formatSet(set)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-
-              {exercise.restTimer && (
-                <Text variant="bodySmall" style={styles.restTimer}>
-                  Rest: {exercise.restTimer}s
+                <Text variant="bodySmall" style={styles.exerciseSummary}>
+                  {formatSetSummary(exercise.sets)}
                 </Text>
-              )}
-            </Card.Content>
-          </Card>
-        ))}
+              </TouchableOpacity>
+              {index < template.exercises.length - 1 && <Divider />}
+            </View>
+          ))}
+        </View>
       </ScrollView>
 
       {/* Start Workout Button */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { backgroundColor: theme.colors.background }]}>
         <Button
           mode="contained"
           style={styles.startButton}
@@ -141,6 +147,52 @@ export default function TemplateDetailScreen({ templateId }: Props) {
           Start Workout
         </Button>
       </View>
+
+      {/* Exercise Details Modal */}
+      <Portal>
+        <Modal
+          visible={selectedExercise !== null}
+          onDismiss={() => setSelectedExercise(null)}
+          contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+        >
+          {selectedExercise && (
+            <View>
+              <Text variant="titleLarge" style={styles.modalTitle}>
+                {selectedExercise.name}
+              </Text>
+
+              {selectedExercise.notes && (
+                <Text variant="bodyMedium" style={styles.modalNotes}>
+                  {selectedExercise.notes}
+                </Text>
+              )}
+
+              <View style={styles.modalSets}>
+                <Text variant="labelMedium" style={styles.modalSectionTitle}>Sets</Text>
+                {selectedExercise.sets.map((set, idx) => (
+                  <Text key={set.id} variant="bodyMedium" style={styles.modalSetRow}>
+                    {formatSetDetail(set, idx)}
+                  </Text>
+                ))}
+              </View>
+
+              {selectedExercise.restTimer && (
+                <Text variant="bodyMedium" style={styles.modalRest}>
+                  Rest: {selectedExercise.restTimer}s between sets
+                </Text>
+              )}
+
+              <Button
+                mode="contained-tonal"
+                onPress={() => setSelectedExercise(null)}
+                style={styles.modalButton}
+              >
+                Close
+              </Button>
+            </View>
+          )}
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -156,10 +208,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   title: {
     fontWeight: '700',
@@ -168,45 +220,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
     opacity: 0.7,
   },
-  exerciseCard: {
-    marginBottom: 12,
+  exerciseList: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
   },
   exerciseName: {
-    fontWeight: '600',
-  },
-  exerciseNotes: {
-    marginTop: 4,
-    opacity: 0.6,
-    fontStyle: 'italic',
-  },
-  setsContainer: {
-    marginTop: 12,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    paddingVertical: 4,
-  },
-  setLabel: {
-    flex: 1,
-    opacity: 0.6,
-    textTransform: 'uppercase',
-  },
-  divider: {
-    marginVertical: 4,
-  },
-  setRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-  },
-  setNumber: {
-    flex: 1,
     fontWeight: '500',
-  },
-  setTarget: {
     flex: 1,
+    marginRight: 12,
   },
-  restTimer: {
-    marginTop: 8,
+  exerciseSummary: {
     opacity: 0.6,
   },
   bottomBar: {
@@ -215,12 +245,44 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingBottom: 32,
   },
   startButton: {
     borderRadius: 12,
   },
   startButtonContent: {
     paddingVertical: 8,
+  },
+  modal: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  modalNotes: {
+    opacity: 0.7,
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  modalSectionTitle: {
+    opacity: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  modalSets: {
+    marginBottom: 16,
+  },
+  modalSetRow: {
+    paddingVertical: 4,
+  },
+  modalRest: {
+    opacity: 0.7,
+    marginBottom: 16,
+  },
+  modalButton: {
+    marginTop: 8,
   },
 });

@@ -283,7 +283,7 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               <View style={styles.setsHeader}>
                 <Text style={[styles.headerCell, styles.setCol]}>Set</Text>
                 <Text style={[styles.headerCell, styles.prevCol]}>Previous</Text>
-                <Text style={[styles.headerCell, styles.inputCol]}>kg</Text>
+                <Text style={[styles.headerCell, styles.inputCol]}>lbs</Text>
                 <Text style={[styles.headerCell, styles.inputCol]}>Reps</Text>
                 <Text style={[styles.headerCell, styles.checkCol]}></Text>
               </View>
