@@ -1,7 +1,7 @@
 import { WorkoutTemplate, createTemplateFromImport } from '../models/WorkoutTemplate';
 import { WorkoutInstance, WorkoutChanges } from '../models/WorkoutInstance';
 import { Exercise, cloneExercise } from '../models/Exercise';
-import { Set } from '../models/Set';
+import { Set as WorkoutSet } from '../models/Set';
 
 export type UpdateOption = 'values_only' | 'template_and_values' | 'save_as_new' | 'keep_original';
 
@@ -121,7 +121,7 @@ function updateTemplateAndValues(
     }
 
     // Create updated exercise with all sets from workout
-    const updatedSets: Set[] = workoutExercise.sets.map((workoutSet, index) => ({
+    const updatedSets: WorkoutSet[] = workoutExercise.sets.map((workoutSet, index) => ({
       id: workoutSet.id,
       setNumber: index + 1,
       targetReps: workoutSet.completed ? workoutSet.actualReps : workoutSet.targetReps,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity } from 'react-native';
 import {
   Text,
   Card,
@@ -8,6 +8,7 @@ import {
   List,
   RadioButton,
   ActivityIndicator,
+  IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
 
@@ -106,8 +107,8 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
         await saveTemplate(updatedTemplate);
       }
 
-      // Navigate back to template list (reset history)
-      navigate({ name: 'TemplateList' });
+      // Navigate back to template list (reset history so user can't go back)
+      navigate({ name: 'TemplateList' }, { reset: true });
     } catch (error) {
       console.error('Failed to update template:', error);
       Alert.alert('Error', 'Failed to save changes');
@@ -246,14 +247,24 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
       </ScrollView>
 
       <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={goBack}
+        >
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            iconColor="#888888"
+            style={{ margin: 0 }}
+          />
+        </TouchableOpacity>
         <Button
           mode="contained"
           onPress={handleConfirm}
           loading={saving}
           disabled={saving}
-          style={styles.confirmButton}
-          contentStyle={styles.confirmButtonContent}
-          labelStyle={styles.confirmButtonLabel}
+          style={styles.primaryButton}
+          labelStyle={styles.buttonLabel}
           buttonColor="#E53935"
           textColor="#000000"
         >
@@ -386,21 +397,32 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.95)',
+    flexDirection: 'row',
+    padding: 12,
+    paddingBottom: 28,
+    backgroundColor: '#000000',
+    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#2A2A2A',
   },
-  confirmButton: {
+  backButton: {
+    flex: 1,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#555555',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 38,
   },
-  confirmButtonContent: {
-    paddingVertical: 8,
+  primaryButton: {
+    flex: 4,
+    borderRadius: 8,
+    justifyContent: 'center',
+    height: 38,
   },
-  confirmButtonLabel: {
+  buttonLabel: {
     fontFamily: typewriterFont,
     fontWeight: '700',
     letterSpacing: 2,
-    fontSize: 16,
   },
 });

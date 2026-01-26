@@ -20,6 +20,7 @@ import {
   WorkoutInstance,
   PreviousWorkoutData,
   PreviousSetData,
+  ExerciseLibraryItem,
 } from '../../models';
 
 // Helper to convert Firestore timestamps to Date
@@ -307,4 +308,73 @@ export async function getWorkoutsByTemplate(
       endTime: timestampToDate(data.endTime),
     } as WorkoutInstance;
   });
+}
+
+// ============================================
+// EXERCISE LIBRARY
+// ============================================
+
+export async function getExerciseLibrary(userId: string): Promise<ExerciseLibraryItem[]> {
+  const db = getFirestoreDb();
+  const exercisesRef = collection(db, 'users', userId, 'exercises');
+  const q = query(exercisesRef, orderBy('name', 'asc'));
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      ...data,
+      id: doc.id,
+      createdAt: timestampToDate(data.createdAt) || new Date(),
+      updatedAt: timestampToDate(data.updatedAt) || new Date(),
+    } as ExerciseLibraryItem;
+  });
+}
+
+export async function saveExerciseToLibrary(exercise: ExerciseLibraryItem): Promise<void> {
+  const db = getFirestoreDb();
+  const exerciseRef = doc(db, 'users', exercise.userId, 'exercises', exercise.id);
+
+  const data = removeUndefined({
+    ...exercise,
+    createdAt: dateToFirestore(exercise.createdAt),
+    updatedAt: dateToFirestore(new Date()),
+  });
+
+  await setDoc(exerciseRef, data);
+}
+
+export async function deleteExerciseFromLibrary(userId: string, exerciseId: string): Promise<void> {
+  const db = getFirestoreDb();
+  const exerciseRef = doc(db, 'users', userId, 'exercises', exerciseId);
+  await deleteDoc(exerciseRef);
+}
+
+// Subscribe to real-time exercise library updates
+export function subscribeToExerciseLibrary(
+  userId: string,
+  callback: (exercises: ExerciseLibraryItem[]) => void
+): Unsubscribe {
+  const db = getFirestoreDb();
+  const exercisesRef = collection(db, 'users', userId, 'exercises');
+  const q = query(exercisesRef, orderBy('name', 'asc'));
+
+  return onSnapshot(q, (snapshot) => {
+    const exercises = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: timestampToDate(data.createdAt) || new Date(),
+        updatedAt: timestampToDate(data.updatedAt) || new Date(),
+      } as ExerciseLibraryItem;
+    });
+    callback(exercises);
+  });
+}
+
+// Check if an exercise name already exists in the library (case-insensitive)
+export async function exerciseExistsInLibrary(userId: string, name: string): Promise<boolean> {
+  const exercises = await getExerciseLibrary(userId);
+  return exercises.some(e => e.name.toLowerCase() === name.toLowerCase());
 }

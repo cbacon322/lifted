@@ -11,6 +11,7 @@ export interface WorkoutTemplate {
   lastUsed?: Date;
   tags?: string[];
   userId: string; // for multi-user support
+  archived?: boolean; // if true, hidden from main list but kept in history
 }
 
 // Zod schema for JSON import validation

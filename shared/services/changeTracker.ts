@@ -7,7 +7,7 @@ import {
   AddedExercise,
 } from '../models/WorkoutInstance';
 import { Exercise } from '../models/Exercise';
-import { Set } from '../models/Set';
+import { Set as WorkoutSet } from '../models/Set';
 import { WorkoutTemplate } from '../models/WorkoutTemplate';
 
 // Compare workout instance with original template to detect all changes
@@ -162,7 +162,7 @@ function detectExerciseModification(
 }
 
 // Check if set value increased compared to template
-export function isSetImproved(workoutSet: Set, templateSet: Set): boolean {
+export function isSetImproved(workoutSet: WorkoutSet, templateSet: WorkoutSet): boolean {
   if (!workoutSet.completed) return false;
 
   // Weight increased
@@ -197,7 +197,7 @@ export function isSetImproved(workoutSet: Set, templateSet: Set): boolean {
 }
 
 // Check if set value decreased
-export function isSetDecreased(workoutSet: Set, templateSet: Set): boolean {
+export function isSetDecreased(workoutSet: WorkoutSet, templateSet: WorkoutSet): boolean {
   if (!workoutSet.completed) return false;
 
   // Weight decreased
@@ -225,8 +225,8 @@ export function isSetDecreased(workoutSet: Set, templateSet: Set): boolean {
 export type SetChangeIndicator = 'none' | 'improved' | 'decreased' | 'added' | 'skipped';
 
 export function getSetChangeIndicator(
-  workoutSet: Set,
-  templateSet: Set | null
+  workoutSet: WorkoutSet,
+  templateSet: WorkoutSet | null
 ): SetChangeIndicator {
   // Added set (no template counterpart)
   if (!templateSet) {

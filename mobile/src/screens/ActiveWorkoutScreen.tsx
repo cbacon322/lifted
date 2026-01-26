@@ -16,14 +16,19 @@ import {
   WorkoutTemplate,
   WorkoutInstance,
   Set as WorkoutSet,
+  Exercise,
   createWorkoutInstance,
   PreviousWorkoutData,
+  ExerciseLibraryItem,
+  createExerciseLibraryItem,
 } from '../../../shared/models';
 import {
   getTemplate,
   saveWorkout,
   getPreviousWorkoutData,
   getDevUserId,
+  subscribeToExerciseLibrary,
+  saveExerciseToLibrary,
 } from '../../../shared/services/firebase';
 import { formatPreviousSet } from '../../../shared/utils';
 
@@ -59,11 +64,24 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
   const [detailsVisible, setDetailsVisible] = useState<Set<number>>(new Set());
 
+  // Add exercise state
+  const [exerciseLibrary, setExerciseLibrary] = useState<ExerciseLibraryItem[]>([]);
+  const [addExerciseModalVisible, setAddExerciseModalVisible] = useState(false);
+  const [newExerciseName, setNewExerciseName] = useState('');
+
   const userId = getDevUserId();
 
   useEffect(() => {
     initializeWorkout();
   }, [templateId]);
+
+  // Subscribe to exercise library
+  useEffect(() => {
+    const unsubscribe = subscribeToExerciseLibrary(userId, (exercises) => {
+      setExerciseLibrary(exercises);
+    });
+    return () => unsubscribe();
+  }, [userId]);
 
   // Workout duration timer
   useEffect(() => {
@@ -308,6 +326,108 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
     });
   };
 
+  // Filter exercises for autocomplete
+  const filteredExercises = exerciseLibrary.filter(ex =>
+    ex.name.toLowerCase().includes(newExerciseName.toLowerCase()) &&
+    !workout?.exercises.some(e => e.name.toLowerCase() === ex.name.toLowerCase())
+  );
+
+  // Check if exercise name already exists in current workout
+  const exerciseExistsInWorkout = (name: string): boolean => {
+    if (!workout) return false;
+    return workout.exercises.some(e => e.name.toLowerCase() === name.toLowerCase());
+  };
+
+  const addExerciseFromLibrary = async (libraryItem: ExerciseLibraryItem) => {
+    if (!workout) return;
+
+    if (exerciseExistsInWorkout(libraryItem.name)) {
+      Alert.alert('Duplicate', `${libraryItem.name} is already in this workout.`);
+      return;
+    }
+
+    // Fetch previous data for this exercise
+    const prevData = await getPreviousWorkoutData(userId, [libraryItem.name]);
+    const prevExercise = prevData.get(libraryItem.name.toLowerCase());
+
+    const newExercise: Exercise = {
+      id: `exercise_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      name: libraryItem.name,
+      exerciseType: libraryItem.exerciseType,
+      sets: [{
+        id: `set_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        setNumber: 1,
+        targetReps: prevExercise?.sets[0]?.reps || 10,
+        targetWeight: prevExercise?.sets[0]?.weight,
+        completed: false,
+        skipped: false,
+      }],
+      notes: libraryItem.notes,
+      order: workout.exercises.length,
+    };
+
+    setWorkout(prev => {
+      if (!prev) return prev;
+      return { ...prev, exercises: [...prev.exercises, newExercise] };
+    });
+
+    // Update previous data map
+    if (prevExercise) {
+      setPreviousData(prev => new Map(prev).set(libraryItem.name.toLowerCase(), prevExercise));
+    }
+
+    setAddExerciseModalVisible(false);
+    setNewExerciseName('');
+  };
+
+  const createAndAddExercise = async () => {
+    if (!workout || !newExerciseName.trim()) return;
+
+    const trimmedName = newExerciseName.trim();
+
+    if (exerciseExistsInWorkout(trimmedName)) {
+      Alert.alert('Duplicate', `${trimmedName} is already in this workout.`);
+      return;
+    }
+
+    // Save to exercise library
+    const libraryItem = createExerciseLibraryItem(userId, trimmedName, 'strength');
+    await saveExerciseToLibrary(libraryItem);
+
+    // Fetch previous data for this exercise
+    const prevData = await getPreviousWorkoutData(userId, [trimmedName]);
+    const prevExercise = prevData.get(trimmedName.toLowerCase());
+
+    // Add to workout
+    const newExercise: Exercise = {
+      id: `exercise_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      name: trimmedName,
+      exerciseType: 'strength',
+      sets: [{
+        id: `set_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        setNumber: 1,
+        targetReps: prevExercise?.sets[0]?.reps || 10,
+        targetWeight: prevExercise?.sets[0]?.weight,
+        completed: false,
+        skipped: false,
+      }],
+      order: workout.exercises.length,
+    };
+
+    setWorkout(prev => {
+      if (!prev) return prev;
+      return { ...prev, exercises: [...prev.exercises, newExercise] };
+    });
+
+    // Update previous data map
+    if (prevExercise) {
+      setPreviousData(prev => new Map(prev).set(trimmedName.toLowerCase(), prevExercise));
+    }
+
+    setAddExerciseModalVisible(false);
+    setNewExerciseName('');
+  };
+
   const handleFinishWorkout = async () => {
     if (!workout || !template) return;
 
@@ -316,9 +436,10 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
     );
 
     if (emptyExercises.length > 0) {
+      const exerciseList = emptyExercises.map(e => `• ${e.name}`).join('\n');
       Alert.alert(
         'Empty Exercises',
-        `${emptyExercises.map(e => e.name).join(', ')} have no values. Skip them?`,
+        `The following exercises have no values:\n\n${exerciseList}\n\nSkip them?`,
         [
           { text: 'Go Back', style: 'cancel' },
           { text: 'Skip & Finish', onPress: () => finishWorkout() },
@@ -498,6 +619,7 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
                         onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'weight', v)}
                         placeholder={set.targetWeight?.toString()}
                         placeholderTextColor="#666666"
+                        keyboardAppearance="dark"
                       />
                       <RNTextInput
                         style={[styles.input, set.completed && styles.inputCompleted]}
@@ -506,6 +628,7 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
                         onChangeText={(v) => updateSet(exerciseIndex, setIndex, 'reps', v)}
                         placeholder={set.targetReps?.toString()}
                         placeholderTextColor="#666666"
+                        keyboardAppearance="dark"
                       />
                       <IconButton
                         icon={set.completed ? 'check-circle' : 'circle-outline'}
@@ -551,23 +674,37 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
             </Button>
           </View>
         ))}
+
+        {/* Add Exercise Button */}
+        <Button
+          mode="outlined"
+          onPress={() => setAddExerciseModalVisible(true)}
+          style={styles.addExerciseButton}
+          textColor="#E53935"
+          labelStyle={styles.addExerciseLabel}
+          icon="plus"
+        >
+          ADD EXERCISE
+        </Button>
       </ScrollView>
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
-        <Button
-          mode="outlined"
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={handleCancelWorkout}
-          style={styles.halfButton}
-          textColor="#E53935"
-          labelStyle={styles.buttonLabel}
         >
-          CANCEL
-        </Button>
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            iconColor="#888888"
+            style={{ margin: 0 }}
+          />
+        </TouchableOpacity>
         <Button
           mode="contained"
           onPress={handleFinishWorkout}
-          style={styles.halfButton}
+          style={styles.primaryButton}
           buttonColor="#E53935"
           textColor="#000000"
           labelStyle={styles.buttonLabel}
@@ -601,6 +738,76 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               labelStyle={styles.modalButtonLabel}
             >
               SKIP
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
+
+      {/* Add Exercise Modal */}
+      <Portal>
+        <Modal
+          visible={addExerciseModalVisible}
+          onDismiss={() => {
+            setAddExerciseModalVisible(false);
+            setNewExerciseName('');
+          }}
+          contentContainerStyle={styles.addExerciseModal}
+          style={styles.modalBackdrop}
+        >
+          <Text style={styles.addExerciseTitle}>ADD EXERCISE</Text>
+
+          <RNTextInput
+            style={styles.addExerciseInput}
+            value={newExerciseName}
+            onChangeText={setNewExerciseName}
+            placeholder="Exercise name"
+            placeholderTextColor="#666666"
+            keyboardAppearance="dark"
+            autoFocus
+          />
+
+          {/* Suggestions from library */}
+          {newExerciseName.length > 0 && filteredExercises.length > 0 && (
+            <View style={styles.suggestionsList}>
+              <Text style={styles.suggestionsTitle}>FROM YOUR LIBRARY:</Text>
+              <ScrollView style={styles.suggestionsScroll} nestedScrollEnabled>
+                {filteredExercises.slice(0, 5).map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.suggestionItem}
+                    onPress={() => addExerciseFromLibrary(item)}
+                  >
+                    <Text style={styles.suggestionText}>{item.name}</Text>
+                    <Text style={styles.suggestionType}>{item.exerciseType}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View style={styles.addExerciseButtons}>
+            <Button
+              mode="outlined"
+              onPress={() => {
+                setAddExerciseModalVisible(false);
+                setNewExerciseName('');
+              }}
+              style={styles.modalHalfButton}
+              textColor="#E53935"
+              labelStyle={styles.buttonLabel}
+            >
+              CANCEL
+            </Button>
+            <Button
+              mode="contained"
+              onPress={createAndAddExercise}
+              style={styles.modalHalfButton}
+              buttonColor="#E53935"
+              textColor="#000000"
+              labelStyle={styles.buttonLabel}
+              disabled={!newExerciseName.trim()}
+            >
+              ADD
             </Button>
           </View>
         </Modal>
@@ -834,16 +1041,26 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     padding: 12,
-    paddingBottom: 24,
+    paddingBottom: 28,
     backgroundColor: '#000000',
     gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#2A2A2A',
   },
-  halfButton: {
+  backButton: {
     flex: 1,
     borderRadius: 8,
-    borderColor: '#E53935',
+    borderWidth: 1,
+    borderColor: '#555555',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 38,
+  },
+  primaryButton: {
+    flex: 4,
+    borderRadius: 8,
+    justifyContent: 'center',
+    height: 38,
   },
   buttonLabel: {
     fontFamily: typewriterFont,
@@ -883,5 +1100,98 @@ const styles = StyleSheet.create({
   modalButtonLabel: {
     fontFamily: typewriterFont,
     letterSpacing: 1,
+  },
+
+  // Add Exercise styles
+  addExerciseButton: {
+    marginTop: 12,
+    marginBottom: 8,
+    borderColor: '#E53935',
+    borderRadius: 8,
+  },
+  addExerciseLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+  addExerciseModal: {
+    marginHorizontal: 20,
+    marginTop: 80,
+    marginBottom: 'auto',
+    padding: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#E53935',
+  },
+  addExerciseTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#E53935',
+    marginBottom: 16,
+    letterSpacing: 2,
+  },
+  addExerciseInput: {
+    fontFamily: typewriterFont,
+    fontSize: 16,
+    padding: 12,
+    color: '#EF5350',
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    marginBottom: 16,
+  },
+  suggestionsList: {
+    marginBottom: 16,
+  },
+  suggestionsTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 11,
+    color: '#888888',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  suggestionsScroll: {
+    maxHeight: 150,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 6,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  suggestionText: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#EF5350',
+  },
+  suggestionType: {
+    fontFamily: typewriterFont,
+    fontSize: 11,
+    color: '#888888',
+    textTransform: 'uppercase',
+  },
+  addExerciseButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalHalfButton: {
+    flex: 1,
+    borderRadius: 8,
+    borderColor: '#E53935',
+  },
+  modalBackdrop: {
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
 });

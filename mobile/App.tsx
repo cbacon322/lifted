@@ -13,9 +13,13 @@ type Screen =
   | { name: 'ActiveWorkout'; params: { templateId: string } }
   | { name: 'WorkoutComparison'; params: { workoutId: string; templateId: string } };
 
+interface NavigateOptions {
+  reset?: boolean; // If true, clears history and sets this as the root screen
+}
+
 interface NavigationContextType {
   screen: Screen;
-  navigate: (screen: Screen) => void;
+  navigate: (screen: Screen, options?: NavigateOptions) => void;
   goBack: () => void;
   canGoBack: boolean;
   setTitle: (title: string) => void;
@@ -56,9 +60,13 @@ function AppContent() {
   const [customTitle, setCustomTitle] = useState<string | null>(null);
   const screen = history[history.length - 1];
 
-  const navigate = (newScreen: Screen) => {
+  const navigate = (newScreen: Screen, options?: NavigateOptions) => {
     setCustomTitle(null);
-    setHistory(prev => [...prev, newScreen]);
+    if (options?.reset) {
+      setHistory([newScreen]);
+    } else {
+      setHistory(prev => [...prev, newScreen]);
+    }
   };
 
   const goBack = () => {
@@ -98,7 +106,6 @@ function AppContent() {
     <NavigationContext.Provider value={{ screen, navigate, goBack, canGoBack, setTitle }}>
       <View style={styles.container}>
         <Appbar.Header mode="small" style={styles.header}>
-          {canGoBack && <Appbar.BackAction onPress={goBack} iconColor="#E53935" />}
           <Appbar.Content
             title={customTitle || getTitle(screen)}
             titleStyle={styles.headerTitle}
