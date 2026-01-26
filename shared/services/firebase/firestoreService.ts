@@ -226,6 +226,12 @@ export async function updateWorkout(
   await updateDoc(workoutRef, updateData);
 }
 
+export async function deleteWorkout(userId: string, workoutId: string): Promise<void> {
+  const db = getFirestoreDb();
+  const workoutRef = doc(db, 'users', userId, 'workouts', workoutId);
+  await deleteDoc(workoutRef);
+}
+
 // ============================================
 // PREVIOUS WORKOUT DATA
 // ============================================
@@ -280,6 +286,35 @@ export async function getPreviousWorkoutData(
   }
 
   return previousDataMap;
+}
+
+// Subscribe to real-time workout updates
+export function subscribeToWorkouts(
+  userId: string,
+  callback: (workouts: WorkoutInstance[]) => void,
+  limitCount: number = 100
+): Unsubscribe {
+  const db = getFirestoreDb();
+  const workoutsRef = collection(db, 'users', userId, 'workouts');
+  const q = query(
+    workoutsRef,
+    where('isActive', '==', false),
+    orderBy('startTime', 'desc'),
+    limit(limitCount)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const workouts = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        startTime: timestampToDate(data.startTime) || new Date(),
+        endTime: timestampToDate(data.endTime),
+      } as WorkoutInstance;
+    });
+    callback(workouts);
+  });
 }
 
 // Get workouts by template

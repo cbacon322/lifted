@@ -10,9 +10,11 @@ import { WorkoutProvider } from './src/context/WorkoutContext';
 // Simple navigation context (no react-native-screens)
 type Screen =
   | { name: 'TemplateList' }
+  | { name: 'History' }
   | { name: 'TemplateDetail'; params: { templateId: string } }
   | { name: 'ActiveWorkout'; params: { templateId: string } }
-  | { name: 'WorkoutComparison'; params: { workoutId: string; templateId: string } };
+  | { name: 'WorkoutComparison'; params: { workoutId: string; templateId: string } }
+  | { name: 'WorkoutDetail'; params: { workoutId: string } };
 
 interface NavigateOptions {
   reset?: boolean; // If true, clears history and sets this as the root screen
@@ -36,9 +38,11 @@ export function useNavigation() {
 
 // Screens
 import TemplateListScreen from './src/screens/TemplateListScreen';
+import HistoryScreen from './src/screens/HistoryScreen';
 import TemplateDetailScreen from './src/screens/TemplateDetailScreen';
 import ActiveWorkoutScreen from './src/screens/ActiveWorkoutScreen';
 import WorkoutComparisonScreen from './src/screens/WorkoutComparisonScreen';
+import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen';
 
 // Typewriter font
 const typewriterFont = Platform.select({
@@ -50,9 +54,11 @@ const typewriterFont = Platform.select({
 function getTitle(screen: Screen): string {
   switch (screen.name) {
     case 'TemplateList': return 'WORKOUTS';
+    case 'History': return 'HISTORY';
     case 'TemplateDetail': return 'DETAILS';
     case 'ActiveWorkout': return 'LIFTING';
     case 'WorkoutComparison': return 'COMPLETE';
+    case 'WorkoutDetail': return 'WORKOUT';
   }
 }
 
@@ -89,6 +95,8 @@ function AppContent() {
     switch (screen.name) {
       case 'TemplateList':
         return <TemplateListScreen />;
+      case 'History':
+        return <HistoryScreen />;
       case 'TemplateDetail':
         return <TemplateDetailScreen templateId={screen.params.templateId} />;
       case 'ActiveWorkout':
@@ -100,6 +108,8 @@ function AppContent() {
             templateId={screen.params.templateId}
           />
         );
+      case 'WorkoutDetail':
+        return <WorkoutDetailScreen workoutId={screen.params.workoutId} />;
     }
   };
 
