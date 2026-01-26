@@ -7,6 +7,7 @@ import {
   Portal,
   Modal,
   Menu,
+  ActivityIndicator,
 } from 'react-native-paper';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useNavigation } from '../../App';
@@ -79,14 +80,15 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   useEffect(() => {
     // Check if we're resuming an existing workout from context
     if (workoutContext.isWorkoutRunning && workoutContext.activeTemplate?.id === templateId) {
-      // Restore from context
+      // Restore from context - use setTimeout to allow loading indicator to render
       setWorkout(workoutContext.activeWorkout);
       setTemplate(workoutContext.activeTemplate);
       setPreviousData(workoutContext.previousData);
       setTitle(workoutContext.activeTemplate?.name || 'LIFTING');
-      setLoading(false);
       // Resume the timer
       workoutContext.resumeTimer();
+      // Brief delay to show loading indicator for visual consistency
+      setTimeout(() => setLoading(false), 100);
     } else {
       // Start a new workout
       initializeWorkout();
@@ -500,7 +502,7 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   if (loading || !workout) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.loadingText}>LOADING...</Text>
+        <ActivityIndicator size="large" color="#E53935" />
       </View>
     );
   }
