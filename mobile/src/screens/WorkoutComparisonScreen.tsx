@@ -11,6 +11,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
+import { useWorkoutContext } from '../context/WorkoutContext';
 
 // Import from shared
 import {
@@ -45,6 +46,7 @@ interface Props {
 
 export default function WorkoutComparisonScreen({ workoutId, templateId }: Props) {
   const { navigate, goBack } = useNavigation();
+  const workoutContext = useWorkoutContext();
 
   const [workout, setWorkout] = useState<WorkoutInstance | null>(null);
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
@@ -58,6 +60,17 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
   useEffect(() => {
     loadData();
   }, [workoutId, templateId]);
+
+  // Pause the timer when entering the comparison screen
+  useEffect(() => {
+    workoutContext.pauseTimer();
+  }, []);
+
+  // Handle going back - resume the timer
+  const handleGoBack = () => {
+    workoutContext.resumeTimer();
+    goBack();
+  };
 
   const loadData = async () => {
     try {
@@ -106,6 +119,9 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
       if (updatedTemplate) {
         await saveTemplate(updatedTemplate);
       }
+
+      // Clear the workout from context since we're done
+      workoutContext.clearWorkout();
 
       // Navigate back to template list (reset history so user can't go back)
       navigate({ name: 'TemplateList' }, { reset: true });
@@ -249,7 +265,7 @@ export default function WorkoutComparisonScreen({ workoutId, templateId }: Props
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={goBack}
+          onPress={handleGoBack}
         >
           <IconButton
             icon="arrow-left"

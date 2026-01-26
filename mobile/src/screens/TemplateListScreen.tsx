@@ -12,6 +12,7 @@ import {
   Button,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
+import { useWorkoutContext } from '../context/WorkoutContext';
 
 // Import from shared
 import { WorkoutTemplate } from '../../../shared/models';
@@ -31,6 +32,7 @@ const typewriterFont = Platform.select({
 
 export default function TemplateListScreen() {
   const { navigate } = useNavigation();
+  const workoutContext = useWorkoutContext();
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,6 +49,20 @@ export default function TemplateListScreen() {
   const [activeTab, setActiveTab] = useState<'workouts' | 'history' | 'library' | 'settings'>('workouts');
 
   const userId = getDevUserId();
+
+  // Format elapsed time for display
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handle resume workout
+  const handleResumeWorkout = () => {
+    if (workoutContext.activeTemplate) {
+      navigate({ name: 'ActiveWorkout', params: { templateId: workoutContext.activeTemplate.id } });
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = subscribeToTemplates(userId, (loadedTemplates) => {
@@ -211,6 +227,19 @@ export default function TemplateListScreen() {
           </Text>
         </View>
 
+        {/* Active Workout Bar */}
+        {workoutContext.isWorkoutRunning && (
+          <TouchableOpacity style={styles.activeWorkoutBar} onPress={handleResumeWorkout}>
+            <View style={styles.activeWorkoutInfo}>
+              <Icon source="play-circle" size={20} color="#E53935" />
+              <Text style={styles.activeWorkoutName} numberOfLines={1}>
+                {workoutContext.activeTemplate?.name.toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.activeWorkoutTimer}>{formatTime(workoutContext.elapsedSeconds)}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Tab Bar */}
         <View style={styles.tabBar}>
           <TouchableOpacity
@@ -274,6 +303,19 @@ export default function TemplateListScreen() {
           />
         }
       />
+
+      {/* Active Workout Bar */}
+      {workoutContext.isWorkoutRunning && (
+        <TouchableOpacity style={styles.activeWorkoutBar} onPress={handleResumeWorkout}>
+          <View style={styles.activeWorkoutInfo}>
+            <Icon source="play-circle" size={20} color="#E53935" />
+            <Text style={styles.activeWorkoutName} numberOfLines={1}>
+              {workoutContext.activeTemplate?.name.toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.activeWorkoutTimer}>{formatTime(workoutContext.elapsedSeconds)}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Tab Bar */}
       <View style={styles.tabBar}>
@@ -541,5 +583,44 @@ const styles = StyleSheet.create({
   },
   tabButtonActive: {
     // Active state handled by icon color
+  },
+  // Active Workout Bar - positioned just above the tab bar
+  activeWorkoutBar: {
+    position: 'absolute',
+    bottom: 78, // Height of tab bar (paddingTop 12 + button 38 + paddingBottom 28)
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1A1A1A',
+    borderTopWidth: 1,
+    borderTopColor: '#E53935',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    height: 44,
+  },
+  activeWorkoutInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  activeWorkoutName: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EF5350',
+    letterSpacing: 1,
+    flex: 1,
+  },
+  activeWorkoutTimer: {
+    fontFamily: typewriterFont,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#E53935',
+    letterSpacing: 1,
   },
 });

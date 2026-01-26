@@ -10,6 +10,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '../../App';
+import { useWorkoutContext } from '../context/WorkoutContext';
 
 // Import from shared
 import {
@@ -40,6 +41,7 @@ interface Props {
 
 export default function TemplateDetailScreen({ templateId }: Props) {
   const { navigate, goBack } = useNavigation();
+  const workoutContext = useWorkoutContext();
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -48,6 +50,9 @@ export default function TemplateDetailScreen({ templateId }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTemplate, setEditedTemplate] = useState<WorkoutTemplate | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Workout already running modal
+  const [workoutRunningModalVisible, setWorkoutRunningModalVisible] = useState(false);
 
   // Add exercise state
   const [exerciseLibrary, setExerciseLibrary] = useState<ExerciseLibraryItem[]>([]);
@@ -292,6 +297,27 @@ export default function TemplateDetailScreen({ templateId }: Props) {
     return parts.join(' ');
   };
 
+  const handleStartWorkout = () => {
+    if (!template) return;
+
+    // Check if a workout is already running
+    if (workoutContext.isWorkoutRunning) {
+      setWorkoutRunningModalVisible(true);
+    } else {
+      navigate({ name: 'ActiveWorkout', params: { templateId: template.id } });
+    }
+  };
+
+  const handleFinishCurrentAndStart = () => {
+    setWorkoutRunningModalVisible(false);
+    // Navigate to the active workout to finish it
+    // The user will go through the finish flow (skip modal, compare screen)
+    // and then return to the template list
+    if (workoutContext.activeTemplate) {
+      navigate({ name: 'ActiveWorkout', params: { templateId: workoutContext.activeTemplate.id } });
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -476,16 +502,18 @@ export default function TemplateDetailScreen({ templateId }: Props) {
       <View style={styles.bottomBar}>
         {isEditing ? (
           <View style={styles.buttonRow}>
-            <Button
-              mode="outlined"
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={cancelEditing}
-              style={styles.secondaryButton}
-              textColor="#888888"
-              labelStyle={styles.buttonLabel}
               disabled={saving}
             >
-              CANCEL
-            </Button>
+              <IconButton
+                icon="arrow-left"
+                size={24}
+                iconColor={saving ? '#444444' : '#888888'}
+                style={{ margin: 0 }}
+              />
+            </TouchableOpacity>
             <Button
               mode="contained"
               onPress={saveChanges}
@@ -518,7 +546,7 @@ export default function TemplateDetailScreen({ templateId }: Props) {
               buttonColor="#E53935"
               textColor="#000000"
               labelStyle={styles.buttonLabel}
-              onPress={() => navigate({ name: 'ActiveWorkout', params: { templateId: template.id } })}
+              onPress={handleStartWorkout}
             >
               START
             </Button>
@@ -639,6 +667,45 @@ export default function TemplateDetailScreen({ templateId }: Props) {
               disabled={!newExerciseName.trim()}
             >
               ADD
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
+
+      {/* Workout Already Running Modal */}
+      <Portal>
+        <Modal
+          visible={workoutRunningModalVisible}
+          onDismiss={() => setWorkoutRunningModalVisible(false)}
+          contentContainerStyle={styles.workoutRunningModal}
+          style={styles.modalBackdrop}
+        >
+          <Text style={styles.workoutRunningTitle}>WORKOUT IN PROGRESS</Text>
+          <Text style={styles.workoutRunningName}>
+            {workoutContext.activeTemplate?.name.toUpperCase()}
+          </Text>
+          <Text style={styles.workoutRunningSubtitle}>
+            You already have a workout running. Only one workout can run at a time.
+          </Text>
+
+          <View style={styles.workoutRunningButtons}>
+            <Button
+              mode="contained"
+              onPress={handleFinishCurrentAndStart}
+              style={styles.workoutRunningButton}
+              buttonColor="#E53935"
+              textColor="#000000"
+              labelStyle={styles.buttonLabel}
+            >
+              GO TO CURRENT
+            </Button>
+            <Button
+              mode="text"
+              onPress={() => setWorkoutRunningModalVisible(false)}
+              textColor="#666666"
+              labelStyle={styles.workoutRunningCancelLabel}
+            >
+              Cancel
             </Button>
           </View>
         </Modal>
@@ -988,5 +1055,54 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  },
+  // Workout Running Modal styles
+  workoutRunningModal: {
+    marginHorizontal: 20,
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    padding: 24,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#E53935',
+  },
+  workoutRunningTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#E53935',
+    marginBottom: 12,
+    letterSpacing: 2,
+    textAlign: 'center',
+  },
+  workoutRunningSubtitle: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  workoutRunningName: {
+    fontFamily: typewriterFont,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#EF5350',
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 1,
+  },
+  workoutRunningButtons: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  workoutRunningButton: {
+    width: '100%',
+    borderRadius: 8,
+  },
+  workoutRunningCancelLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
   },
 });

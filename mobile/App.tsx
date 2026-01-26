@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider, Appbar } from 'react-native-paper';
 import { darkTheme } from './src/theme/theme';
+import { WorkoutProvider } from './src/context/WorkoutContext';
 
 // Simple navigation context (no react-native-screens)
 type Screen =
@@ -124,8 +125,10 @@ export default function App() {
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
         <PaperProvider theme={darkTheme}>
-          <StatusBar style="light" />
-          <AppContent />
+          <WorkoutProvider>
+            <StatusBar style="light" />
+            <AppContent />
+          </WorkoutProvider>
         </PaperProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

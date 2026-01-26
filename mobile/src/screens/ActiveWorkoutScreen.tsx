@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, TextInput as RNTextInput, Platform } from 'react-native';
 import {
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native-paper';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useNavigation } from '../../App';
+import { useWorkoutContext } from '../context/WorkoutContext';
 
 // Import from shared
 import {
@@ -45,6 +46,7 @@ interface Props {
 
 export default function ActiveWorkoutScreen({ templateId }: Props) {
   const { navigate, goBack, setTitle } = useNavigation();
+  const workoutContext = useWorkoutContext();
 
   const [workout, setWorkout] = useState<WorkoutInstance | null>(null);
   const [template, setTemplate] = useState<WorkoutTemplate | null>(null);
@@ -56,9 +58,11 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   // Inline rest timers per set (key: `${exerciseIndex}-${setIndex}`)
   const [inlineRestTimers, setInlineRestTimers] = useState<Map<string, number>>(new Map());
 
-  // Workout duration timer
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const startTimeRef = useRef<Date | null>(null);
+  // Workout duration timer - use context for persistence
+  const elapsedSeconds = workoutContext.elapsedSeconds;
+
+  // Back button modal
+  const [backModalVisible, setBackModalVisible] = useState(false);
 
   // Exercise menu and details visibility
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
@@ -71,9 +75,32 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
 
   const userId = getDevUserId();
 
+  // Initialize or restore workout
   useEffect(() => {
-    initializeWorkout();
+    // Check if we're resuming an existing workout from context
+    if (workoutContext.isWorkoutRunning && workoutContext.activeTemplate?.id === templateId) {
+      // Restore from context
+      setWorkout(workoutContext.activeWorkout);
+      setTemplate(workoutContext.activeTemplate);
+      setPreviousData(workoutContext.previousData);
+      setTitle(workoutContext.activeTemplate?.name || 'LIFTING');
+      setLoading(false);
+      // Resume the timer
+      workoutContext.resumeTimer();
+    } else {
+      // Start a new workout
+      initializeWorkout();
+    }
   }, [templateId]);
+
+  // Sync workout state to context whenever it changes
+  useEffect(() => {
+    if (workout && template) {
+      workoutContext.setActiveWorkout(workout);
+      workoutContext.setActiveTemplate(template);
+      workoutContext.setPreviousData(previousData);
+    }
+  }, [workout, template, previousData]);
 
   // Subscribe to exercise library
   useEffect(() => {
@@ -82,21 +109,6 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
     });
     return () => unsubscribe();
   }, [userId]);
-
-  // Workout duration timer
-  useEffect(() => {
-    if (!workout) return;
-    startTimeRef.current = workout.startTime;
-
-    const interval = setInterval(() => {
-      if (startTimeRef.current) {
-        const elapsed = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000);
-        setElapsedSeconds(elapsed);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [workout]);
 
   // Inline rest timer countdown
   useEffect(() => {
@@ -470,14 +482,19 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
   };
 
   const handleCancelWorkout = () => {
-    Alert.alert(
-      'Cancel Workout',
-      'Are you sure you want to cancel? All progress will be lost.',
-      [
-        { text: 'Continue Workout', style: 'cancel' },
-        { text: 'Cancel Workout', style: 'destructive', onPress: goBack },
-      ]
-    );
+    setBackModalVisible(true);
+  };
+
+  const handleCancelAndDiscard = () => {
+    setBackModalVisible(false);
+    workoutContext.clearWorkout();
+    navigate({ name: 'TemplateList' }, { reset: true });
+  };
+
+  const handleKeepRunningGoHome = () => {
+    setBackModalVisible(false);
+    // Workout stays in context, just navigate home
+    navigate({ name: 'TemplateList' }, { reset: true });
   };
 
   if (loading || !workout) {
@@ -808,6 +825,51 @@ export default function ActiveWorkoutScreen({ templateId }: Props) {
               disabled={!newExerciseName.trim()}
             >
               ADD
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
+
+      {/* Back Button Modal */}
+      <Portal>
+        <Modal
+          visible={backModalVisible}
+          onDismiss={() => setBackModalVisible(false)}
+          contentContainerStyle={styles.backModal}
+          style={styles.modalBackdrop}
+        >
+          <Text style={styles.backModalTitle}>LEAVE WORKOUT?</Text>
+          <Text style={styles.backModalSubtitle}>
+            Your workout is still running. What would you like to do?
+          </Text>
+
+          <View style={styles.backModalButtons}>
+            <Button
+              mode="outlined"
+              onPress={handleCancelAndDiscard}
+              style={styles.backModalButton}
+              textColor="#888888"
+              labelStyle={styles.buttonLabel}
+            >
+              CANCEL WORKOUT
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleKeepRunningGoHome}
+              style={styles.backModalButton}
+              buttonColor="#E53935"
+              textColor="#000000"
+              labelStyle={styles.buttonLabel}
+            >
+              RUN IN BACKGROUND
+            </Button>
+            <Button
+              mode="text"
+              onPress={() => setBackModalVisible(false)}
+              textColor="#666666"
+              labelStyle={styles.backModalContinueLabel}
+            >
+              Continue Workout
             </Button>
           </View>
         </Modal>
@@ -1193,5 +1255,41 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  },
+
+  // Back modal styles
+  backModal: {
+    marginHorizontal: 20,
+    padding: 20,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#E53935',
+  },
+  backModalTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#E53935',
+    marginBottom: 8,
+    letterSpacing: 2,
+  },
+  backModalSubtitle: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
+    marginBottom: 20,
+  },
+  backModalButtons: {
+    gap: 12,
+  },
+  backModalButton: {
+    borderRadius: 8,
+    borderColor: '#555555',
+  },
+  backModalContinueLabel: {
+    fontFamily: typewriterFont,
+    fontSize: 12,
+    letterSpacing: 1,
   },
 });
