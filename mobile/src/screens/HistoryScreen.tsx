@@ -421,7 +421,10 @@ export default function HistoryScreen() {
         <TouchableOpacity style={[styles.tabButton, styles.tabButtonActive]}>
           <Icon source="history" size={30} color="#E53935" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabButton}>
+        <TouchableOpacity
+          style={styles.tabButton}
+          onPress={() => navigate({ name: 'Library' }, { reset: true })}
+        >
           <Icon source="bookshelf" size={30} color="#888888" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabButton}>

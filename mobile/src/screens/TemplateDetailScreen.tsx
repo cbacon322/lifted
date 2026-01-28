@@ -23,6 +23,7 @@ import {
 import {
   getTemplate,
   updateTemplate,
+  unarchiveTemplate,
   getDevUserId,
   subscribeToExerciseLibrary,
   saveExerciseToLibrary,
@@ -53,6 +54,9 @@ export default function TemplateDetailScreen({ templateId }: Props) {
 
   // Workout already running modal
   const [workoutRunningModalVisible, setWorkoutRunningModalVisible] = useState(false);
+
+  // Reinstate modal (for archived templates)
+  const [reinstateModalVisible, setReinstateModalVisible] = useState(false);
 
   // Add exercise state
   const [exerciseLibrary, setExerciseLibrary] = useState<ExerciseLibraryItem[]>([]);
@@ -318,6 +322,18 @@ export default function TemplateDetailScreen({ templateId }: Props) {
     }
   };
 
+  const handleReinstate = async () => {
+    if (!template) return;
+    try {
+      await unarchiveTemplate(userId, template.id);
+      setReinstateModalVisible(false);
+      goBack();
+    } catch (error) {
+      console.error('Failed to reinstate template:', error);
+      Alert.alert('Error', 'Failed to reinstate template. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -365,13 +381,24 @@ export default function TemplateDetailScreen({ templateId }: Props) {
               <Text style={styles.title}>
                 {displayTemplate.name.toUpperCase()}
               </Text>
-              <IconButton
-                icon="pencil"
-                size={20}
-                iconColor="#888888"
-                onPress={startEditing}
-                style={styles.editHeaderButton}
-              />
+              <View style={styles.headerButtons}>
+                <IconButton
+                  icon="pencil"
+                  size={20}
+                  iconColor="#888888"
+                  onPress={startEditing}
+                  style={styles.editHeaderButton}
+                />
+                {template?.archived && (
+                  <IconButton
+                    icon="restore"
+                    size={20}
+                    iconColor="#4CAF50"
+                    onPress={() => setReinstateModalVisible(true)}
+                    style={styles.editHeaderButton}
+                  />
+                )}
+              </View>
             </View>
           )}
           {isEditing ? (
@@ -710,6 +737,42 @@ export default function TemplateDetailScreen({ templateId }: Props) {
           </View>
         </Modal>
       </Portal>
+
+      {/* Reinstate Confirmation Modal */}
+      <Portal>
+        <Modal
+          visible={reinstateModalVisible}
+          onDismiss={() => setReinstateModalVisible(false)}
+          contentContainerStyle={styles.reinstateModal}
+          style={styles.modalBackdrop}
+        >
+          <Text style={styles.reinstateModalTitle}>REINSTATE WORKOUT?</Text>
+          <Text style={styles.reinstateModalSubtitle}>
+            "{template?.name}" will be moved back to your Active Workouts list.
+          </Text>
+          <View style={styles.reinstateModalButtons}>
+            <Button
+              mode="outlined"
+              onPress={() => setReinstateModalVisible(false)}
+              style={styles.secondaryButton}
+              textColor="#888888"
+              labelStyle={styles.buttonLabel}
+            >
+              CANCEL
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleReinstate}
+              style={styles.reinstateButton}
+              buttonColor="#4CAF50"
+              textColor="#000000"
+              labelStyle={styles.buttonLabel}
+            >
+              REINSTATE
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -751,6 +814,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   editHeaderButton: {
     margin: 0,
@@ -1104,5 +1171,36 @@ const styles = StyleSheet.create({
   workoutRunningCancelLabel: {
     fontFamily: typewriterFont,
     fontSize: 14,
+  },
+  // Reinstate Modal styles
+  reinstateModal: {
+    marginHorizontal: 20,
+    padding: 20,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  reinstateModalTitle: {
+    fontFamily: typewriterFont,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4CAF50',
+    marginBottom: 8,
+    letterSpacing: 2,
+  },
+  reinstateModalSubtitle: {
+    fontFamily: typewriterFont,
+    fontSize: 14,
+    color: '#888888',
+    marginBottom: 20,
+  },
+  reinstateModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  reinstateButton: {
+    flex: 1,
+    borderRadius: 8,
   },
 });

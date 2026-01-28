@@ -1,5 +1,6 @@
 import { Exercise, cloneExercise } from './Exercise';
-import { WorkoutTemplate } from './WorkoutTemplate';
+import { ExerciseGroup, cloneExerciseGroup } from './ExerciseGroup';
+import { WorkoutTemplate, getAllExercisesFromTemplate } from './WorkoutTemplate';
 
 export interface WorkoutInstance {
   id: string;
@@ -7,11 +8,13 @@ export interface WorkoutInstance {
   templateName: string; // snapshot of template name at workout start
   startTime: Date;
   endTime?: Date;
-  exercises: Exercise[]; // deep copy from template
+  exercises?: Exercise[]; // Deprecated: kept for backward compatibility
+  groups?: ExerciseGroup[]; // New: organized exercises into groups
   isActive: boolean;
   changesSummary?: WorkoutChanges;
   notes?: string;
   userId: string;
+  archived?: boolean; // if true, hidden from history but kept in archive
 }
 
 // Change types for tracking modifications
@@ -53,12 +56,28 @@ export interface WorkoutChanges {
 
 // Create a workout instance from a template
 export function createWorkoutInstance(template: WorkoutTemplate, userId: string): WorkoutInstance {
+  // If template has groups, clone them
+  if (template.groups && template.groups.length > 0) {
+    return {
+      id: generateWorkoutId(),
+      templateId: template.id,
+      templateName: template.name,
+      startTime: new Date(),
+      groups: template.groups.map(cloneExerciseGroup),
+      isActive: true,
+      changesSummary: initializeChangeTracking(),
+      userId,
+    };
+  }
+
+  // Otherwise, use exercises (backward compatibility)
+  const exercises = getAllExercisesFromTemplate(template);
   return {
     id: generateWorkoutId(),
     templateId: template.id,
     templateName: template.name,
     startTime: new Date(),
-    exercises: template.exercises.map(cloneExercise),
+    exercises: exercises.map(cloneExercise),
     isActive: true,
     changesSummary: initializeChangeTracking(),
     userId,
@@ -87,11 +106,20 @@ export function calculateDuration(workout: WorkoutInstance): number | undefined 
   return Math.round(durationMs / 60000);
 }
 
+// Helper to get all exercises from a workout instance (supports both old and new format)
+export function getAllExercisesFromWorkout(workout: WorkoutInstance): Exercise[] {
+  if (workout.groups && workout.groups.length > 0) {
+    return workout.groups.flatMap(group => group.exercises);
+  }
+  return workout.exercises || [];
+}
+
 // Calculate total volume (weight * reps for all completed sets)
 export function calculateTotalVolume(workout: WorkoutInstance): number {
   let totalVolume = 0;
+  const exercises = getAllExercisesFromWorkout(workout);
 
-  for (const exercise of workout.exercises) {
+  for (const exercise of exercises) {
     for (const set of exercise.sets) {
       if (set.completed && set.actualWeight && set.actualReps) {
         totalVolume += set.actualWeight * set.actualReps;
@@ -105,8 +133,9 @@ export function calculateTotalVolume(workout: WorkoutInstance): number {
 // Check if any exercises have empty sets (no values entered)
 export function getEmptySetExercises(workout: WorkoutInstance): { exerciseName: string; emptySetCount: number }[] {
   const result: { exerciseName: string; emptySetCount: number }[] = [];
+  const exercises = getAllExercisesFromWorkout(workout);
 
-  for (const exercise of workout.exercises) {
+  for (const exercise of exercises) {
     const emptySetCount = exercise.sets.filter(
       set => !set.completed && !set.skipped &&
              set.actualReps === undefined &&

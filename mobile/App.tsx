@@ -14,7 +14,11 @@ type Screen =
   | { name: 'TemplateDetail'; params: { templateId: string } }
   | { name: 'ActiveWorkout'; params: { templateId: string } }
   | { name: 'WorkoutComparison'; params: { workoutId: string; templateId: string } }
-  | { name: 'WorkoutDetail'; params: { workoutId: string } };
+  | { name: 'WorkoutDetail'; params: { workoutId: string } }
+  | { name: 'Library' }
+  | { name: 'ActiveExercises' }
+  | { name: 'ExerciseArchive' }
+  | { name: 'WorkoutArchive' };
 
 interface NavigateOptions {
   reset?: boolean; // If true, clears history and sets this as the root screen
@@ -43,6 +47,10 @@ import TemplateDetailScreen from './src/screens/TemplateDetailScreen';
 import ActiveWorkoutScreen from './src/screens/ActiveWorkoutScreen';
 import WorkoutComparisonScreen from './src/screens/WorkoutComparisonScreen';
 import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen';
+import LibraryScreen from './src/screens/LibraryScreen';
+import ActiveExercisesScreen from './src/screens/ActiveExercisesScreen';
+import ExerciseArchiveScreen from './src/screens/ExerciseArchiveScreen';
+import WorkoutArchiveScreen from './src/screens/WorkoutArchiveScreen';
 
 // Typewriter font
 const typewriterFont = Platform.select({
@@ -59,6 +67,10 @@ function getTitle(screen: Screen): string {
     case 'ActiveWorkout': return 'LIFTING';
     case 'WorkoutComparison': return 'COMPLETE';
     case 'WorkoutDetail': return 'WORKOUT';
+    case 'Library': return 'LIBRARY';
+    case 'ActiveExercises': return 'EXERCISES';
+    case 'ExerciseArchive': return 'EXERCISE ARCHIVE';
+    case 'WorkoutArchive': return 'WORKOUT ARCHIVE';
   }
 }
 
@@ -110,6 +122,14 @@ function AppContent() {
         );
       case 'WorkoutDetail':
         return <WorkoutDetailScreen workoutId={screen.params.workoutId} />;
+      case 'Library':
+        return <LibraryScreen />;
+      case 'ActiveExercises':
+        return <ActiveExercisesScreen />;
+      case 'ExerciseArchive':
+        return <ExerciseArchiveScreen />;
+      case 'WorkoutArchive':
+        return <WorkoutArchiveScreen />;
     }
   };
 

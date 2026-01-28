@@ -264,7 +264,7 @@ export default function TemplateListScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'library' && styles.tabButtonActive]}
-            onPress={() => setActiveTab('library')}
+            onPress={() => navigate({ name: 'Library' }, { reset: true })}
           >
             <Icon
               source="bookshelf"
@@ -341,7 +341,7 @@ export default function TemplateListScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'library' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('library')}
+          onPress={() => navigate({ name: 'Library' }, { reset: true })}
         >
           <Icon
             source="bookshelf"

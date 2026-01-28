@@ -277,9 +277,11 @@ export default function WorkoutDetailScreen({ workoutId }: Props) {
                 <Icon source="clock-outline" size={18} color="#E53935" />
                 <Text style={styles.statValue}>{formatDuration(duration)}</Text>
               </View>
-              <TouchableOpacity style={styles.deleteWorkoutButton} onPress={handleDeleteWorkout}>
-                <Icon source="delete" size={20} color="#888888" />
-              </TouchableOpacity>
+              <View style={styles.headerActions}>
+                <TouchableOpacity style={styles.headerActionButton} onPress={handleDeleteWorkout}>
+                  <Icon source="delete" size={20} color="#888888" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -566,6 +568,7 @@ export default function WorkoutDetailScreen({ workoutId }: Props) {
           </View>
         </Modal>
       </Portal>
+
     </View>
   );
 }
@@ -639,9 +642,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#E53935',
   },
-  deleteWorkoutButton: {
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  headerActionButton: {
     padding: 4,
-    marginTop: 20,
   },
   // Exercise wrapper (for non-edit mode)
   exerciseWrapper: {

@@ -63,6 +63,21 @@ const firebaseConfig = {
 - ✅ Authentication (Email/Password enabled)
 - ⏳ Storage (for future file uploads)
 
+### Firebase Composite Indexes
+
+**IMPORTANT:** When adding queries that combine `where()` with `orderBy()`, Firestore requires a composite index. If you see a "The query requires an index" error, you MUST immediately tell the user:
+1. The Collection ID
+2. The fields and their sort order (Ascending/Descending)
+3. The link from the error message to auto-create the index
+
+**Current Required Indexes:**
+
+| Collection | Field 1 | Field 2 | Status |
+|------------|---------|---------|--------|
+| `workouts` | `isActive` (Asc) | `startTime` (Desc) | ✅ Created |
+| `exercises` | `archived` (Asc) | `name` (Asc) | ✅ Created |
+| `templates` | `archived` (Asc) | `updatedAt` (Desc) | ✅ Created |
+
 ---
 
 ## Architecture Decisions
@@ -251,6 +266,37 @@ The workout documents in `users/{userId}/workouts/` contain full exercise snapsh
 **Alternatives:**
 - npm workspaces/monorepo (more complex setup)
 - Publish shared as npm package (overkill for single developer)
+
+### Challenge: Modal Border Not Covering ScrollView Content
+**Problem:** When using a ScrollView inside a React Native Paper Modal with a border, the border doesn't cover the entire modal content. The gray background extends beyond the red border.
+**Solution:**
+1. Remove `padding` from the modal container style
+2. Add `overflow: 'hidden'` to the modal container to clip content
+3. Move padding to the ScrollView's `contentContainerStyle` instead
+4. This ensures the ScrollView content stays within the bordered container
+
+**Code pattern:**
+```tsx
+<Modal contentContainerStyle={styles.modalTop}>
+  <ScrollView contentContainerStyle={styles.scrollViewContent}>
+    {/* content */}
+  </ScrollView>
+</Modal>
+
+// Styles
+modalTop: {
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#E53935',
+  overflow: 'hidden',  // Key: clips content to border
+  // No padding here
+},
+scrollViewContent: {
+  padding: 16,  // Padding moved here
+},
+```
+
+**Affected files:** ActiveExercisesScreen.tsx (Edit Exercise modal)
 
 ---
 

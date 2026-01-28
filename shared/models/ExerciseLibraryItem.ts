@@ -12,6 +12,7 @@ export interface ExerciseLibraryItem {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  archived?: boolean; // if true, hidden from active list but kept in archive
 }
 
 // Helper to create a new exercise library item

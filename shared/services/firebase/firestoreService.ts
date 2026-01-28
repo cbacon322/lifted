@@ -413,3 +413,114 @@ export async function exerciseExistsInLibrary(userId: string, name: string): Pro
   const exercises = await getExerciseLibrary(userId);
   return exercises.some(e => e.name.toLowerCase() === name.toLowerCase());
 }
+
+// Update exercise in library
+export async function updateExerciseInLibrary(
+  userId: string,
+  exerciseId: string,
+  updates: Partial<ExerciseLibraryItem>
+): Promise<void> {
+  const db = getFirestoreDb();
+  const exerciseRef = doc(db, 'users', userId, 'exercises', exerciseId);
+
+  const updateData: Record<string, unknown> = {
+    ...updates,
+    updatedAt: Timestamp.now(),
+  };
+
+  // Convert dates if present
+  if (updates.createdAt) updateData.createdAt = dateToFirestore(updates.createdAt);
+
+  await updateDoc(exerciseRef, updateData);
+}
+
+// Subscribe to archived exercises
+export function subscribeToArchivedExercises(
+  userId: string,
+  callback: (exercises: ExerciseLibraryItem[]) => void
+): Unsubscribe {
+  const db = getFirestoreDb();
+  const exercisesRef = collection(db, 'users', userId, 'exercises');
+  const q = query(
+    exercisesRef,
+    where('archived', '==', true),
+    orderBy('name', 'asc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const exercises = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: timestampToDate(data.createdAt) || new Date(),
+        updatedAt: timestampToDate(data.updatedAt) || new Date(),
+      } as ExerciseLibraryItem;
+    });
+    callback(exercises);
+  });
+}
+
+// Subscribe to active (non-archived) exercises
+export function subscribeToActiveExercises(
+  userId: string,
+  callback: (exercises: ExerciseLibraryItem[]) => void
+): Unsubscribe {
+  const db = getFirestoreDb();
+  const exercisesRef = collection(db, 'users', userId, 'exercises');
+  // Note: Firestore doesn't have a "not equal" or "is null" query that's efficient,
+  // so we query all and filter client-side for active (non-archived) exercises
+  const q = query(exercisesRef, orderBy('name', 'asc'));
+
+  return onSnapshot(q, (snapshot) => {
+    const exercises = snapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: timestampToDate(data.createdAt) || new Date(),
+          updatedAt: timestampToDate(data.updatedAt) || new Date(),
+        } as ExerciseLibraryItem;
+      })
+      .filter(e => !e.archived);
+    callback(exercises);
+  });
+}
+
+// ============================================
+// ARCHIVED TEMPLATES
+// ============================================
+
+// Subscribe to archived templates
+export function subscribeToArchivedTemplates(
+  userId: string,
+  callback: (templates: WorkoutTemplate[]) => void
+): Unsubscribe {
+  const db = getFirestoreDb();
+  const templatesRef = collection(db, 'users', userId, 'templates');
+  const q = query(
+    templatesRef,
+    where('archived', '==', true),
+    orderBy('updatedAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const templates = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: timestampToDate(data.createdAt) || new Date(),
+        updatedAt: timestampToDate(data.updatedAt) || new Date(),
+        lastUsed: timestampToDate(data.lastUsed),
+      } as WorkoutTemplate;
+    });
+    callback(templates);
+  });
+}
+
+// Unarchive (reinstate) a template
+export async function unarchiveTemplate(userId: string, templateId: string): Promise<void> {
+  await updateTemplate(userId, templateId, { archived: false });
+}
